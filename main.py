@@ -146,6 +146,35 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/debug/shopify")
+async def debug_shopify():
+    """Debug endpoint — shows raw Shopify API response to diagnose product fetching issues."""
+    import requests as req
+    store_url = os.getenv("SHOPIFY_STORE_URL", "NOT SET")
+    token = os.getenv("SHOPIFY_ACCESS_TOKEN", "NOT SET")
+    token_preview = token[:8] + "..." if token != "NOT SET" else "NOT SET"
+
+    url = f"https://{store_url}/admin/api/2024-01/products.json?limit=5"
+    headers = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
+    try:
+        resp = req.get(url, headers=headers, timeout=10)
+        return {
+            "store_url": store_url,
+            "token_preview": token_preview,
+            "status_code": resp.status_code,
+            "url_called": url,
+            "response": resp.json(),
+        }
+    except Exception as e:
+        return {
+            "store_url": store_url,
+            "token_preview": token_preview,
+            "error": str(e),
+            "url_called": url,
+        }
+
+
 @app.post("/chat")
 @limiter.limit("30/minute")
 async def chat(request: Request, body: ChatRequest):
