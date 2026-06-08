@@ -1,0 +1,22 @@
+# Shopify App Configuration
+# Push this to Dev Dashboard with: shopify app config push
+
+client_id = "dd10b1096edd8d885b47052866f656d2"
+name = "chatbotbackend"
+
+[access_scopes]
+scopes = "read_products,read_locations,read_inventory_levels"
+
+[auth]
+redirect_urls = [
+  "https://shopify.projekts.pk/auth/callback"
+]
+
+[webhooks]
+api_version = "2026-04"
+
+[build]
+automatically_update_urls_on_dev = true
+
+[pos]
+embedded = false
