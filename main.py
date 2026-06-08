@@ -154,7 +154,7 @@ async def debug_shopify():
     token = os.getenv("SHOPIFY_ACCESS_TOKEN", "NOT SET")
     token_preview = token[:8] + "..." if token != "NOT SET" else "NOT SET"
 
-    url = f"https://{store_url}/admin/api/2024-01/products.json?limit=5"
+    url = f"https://{store_url}/admin/api/2026-04/products.json?limit=5"
     headers = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
 
     try:

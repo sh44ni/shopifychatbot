@@ -11,13 +11,66 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SHOPIFY_STORE_URL = os.getenv("SHOPIFY_STORE_URL", "")
+SHOPIFY_STORE_URL   = os.getenv("SHOPIFY_STORE_URL", "")
 SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN", "")
-BASE_URL = f"https://{SHOPIFY_STORE_URL}/admin/api/2024-01"
-HEADERS = {"X-Shopify-Access-Token": SHOPIFY_ACCESS_TOKEN, "Content-Type": "application/json"}
+SHOPIFY_CLIENT_ID   = os.getenv("SHOPIFY_CLIENT_ID", "")
+SHOPIFY_CLIENT_SECRET = os.getenv("SHOPIFY_CLIENT_SECRET", "")
 
-CACHE_TTL = 300  # 5 minutes in seconds
+BASE_URL = f"https://{SHOPIFY_STORE_URL}/admin/api/2026-04"
+
+CACHE_TTL = 300  # 5 minutes
 _cache: dict = {}
+_token_cache: dict = {}   # { "token": str, "expires_at": float }
+
+
+def _get_access_token() -> str:
+    """
+    Returns a valid Admin API access token.
+    - If SHOPIFY_ACCESS_TOKEN is set in .env, use it directly.
+    - Otherwise, fetch one via Client Credentials (Client ID + Secret).
+    """
+    # Static token takes priority
+    if SHOPIFY_ACCESS_TOKEN and not SHOPIFY_ACCESS_TOKEN.startswith("atkn_"):
+        return SHOPIFY_ACCESS_TOKEN
+
+    # Check cached token (expires_at - 60s buffer)
+    if _token_cache.get("token") and time.time() < _token_cache.get("expires_at", 0) - 60:
+        return _token_cache["token"]
+
+    # Fetch new token via client credentials
+    if not SHOPIFY_CLIENT_ID or not SHOPIFY_CLIENT_SECRET:
+        print("[Shopify] No valid access token or client credentials found in .env")
+        return SHOPIFY_ACCESS_TOKEN  # fallback even if atkn_
+
+    try:
+        resp = requests.post(
+            f"https://{SHOPIFY_STORE_URL}/admin/oauth/access_token",
+            json={
+                "grant_type":    "client_credentials",
+                "client_id":     SHOPIFY_CLIENT_ID,
+                "client_secret": SHOPIFY_CLIENT_SECRET,
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        token = data.get("access_token", "")
+        expires_in = data.get("expires_in", 3600)
+        _token_cache["token"] = token
+        _token_cache["expires_at"] = time.time() + expires_in
+        print(f"[Shopify] Fetched new access token via client credentials (expires in {expires_in}s)")
+        return token
+    except Exception as e:
+        print(f"[Shopify] Failed to fetch token via client credentials: {e}")
+        return SHOPIFY_ACCESS_TOKEN
+
+
+def _get_headers() -> dict:
+    return {
+        "X-Shopify-Access-Token": _get_access_token(),
+        "Content-Type": "application/json",
+    }
+
 
 
 def _is_fresh(key: str) -> bool:
