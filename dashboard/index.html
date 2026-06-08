@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chatbot Dashboard · shopify.projekts.pk</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg:       #0d0b14;
+    --surface:  #161222;
+    --card:     #1e1830;
+    --border:   #2a2240;
+    --primary:  #6c3fc5;
+    --primary2: #8b5cf6;
+    --accent:   #ff6b6b;
+    --green:    #4ade80;
+    --yellow:   #fbbf24;
+    --text:     #e8e3f4;
+    --muted:    #7c6d9a;
+    --radius:   14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Login Overlay ─────────────────────────────── */
+  #login-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(108,63,197,.3);
+  }
+
+  .login-logo { font-size: 40px; margin-bottom: 12px; }
+  .login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .login-card p  { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+
+  .login-input {
+    width: 100%; padding: 12px 16px;
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 14px;
+    font-family: inherit; outline: none; margin-bottom: 14px;
+    transition: border-color .2s;
+  }
+  .login-input:focus { border-color: var(--primary); }
+
+  .login-btn {
+    width: 100%; padding: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--primary2));
+    border: none; border-radius: 10px; color: #fff;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: opacity .2s;
+  }
+  .login-btn:hover { opacity: .9; }
+  .login-error { color: var(--accent); font-size: 13px; margin-top: 10px; display: none; }
+
+  /* ── Layout ────────────────────────────────────── */
+  #app { display: none; }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0;
+    width: 220px; height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  .sidebar-logo {
+    font-size: 18px; font-weight: 700; color: var(--primary2);
+    padding: 0 8px 20px; border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px;
+    font-size: 14px; font-weight: 500; color: var(--muted);
+    cursor: pointer; transition: all .2s; border: none;
+    background: none; width: 100%; text-align: left; font-family: inherit;
+  }
+  .nav-item:hover  { background: var(--card); color: var(--text); }
+  .nav-item.active { background: rgba(108,63,197,.2); color: var(--primary2); }
+  .nav-icon { font-size: 17px; }
+
+  .sidebar-footer {
+    margin-top: auto; padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--muted); text-align: center;
+  }
+
+  .main {
+    margin-left: 220px;
+    padding: 32px;
+    min-height: 100vh;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ── Header ────────────────────────────────────── */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .page-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+  .refresh-btn {
+    padding: 8px 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 13px;
+    font-weight: 500; cursor: pointer; font-family: inherit;
+    transition: border-color .2s;
+  }
+  .refresh-btn:hover { border-color: var(--primary); }
+
+  /* ── Stat Cards ────────────────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 16px; margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: border-color .2s, transform .2s;
+  }
+  .stat-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+
+  .stat-icon { font-size: 24px; margin-bottom: 10px; }
+  .stat-value { font-size: 30px; font-weight: 700; line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; }
+
+  /* ── Charts Row ─────────────────────────────────── */
+  .charts-row {
+    display: grid; grid-template-columns: 2fr 1fr;
+    gap: 16px; margin-bottom: 28px;
+  }
+
+  .chart-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--muted); }
+  canvas { width: 100% !important; }
+
+  /* ── Table ──────────────────────────────────────── */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+
+  .card-header {
+    padding: 18px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-header h3 { font-size: 15px; font-weight: 600; }
+
+  .filter-tabs { display: flex; gap: 6px; }
+  .filter-tab {
+    padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1.5px solid var(--border);
+    background: none; color: var(--muted); font-family: inherit;
+    transition: all .2s;
+  }
+  .filter-tab.active, .filter-tab:hover {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    padding: 12px 16px; text-align: left; font-size: 11px;
+    font-weight: 600; color: var(--muted); text-transform: uppercase;
+    letter-spacing: .06em; border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 13px 16px; font-size: 13px;
+    border-bottom: 1px solid rgba(42,34,64,.5);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(108,63,197,.06); }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .badge-wholesale { background: rgba(251,191,36,.15); color: var(--yellow); }
+  .badge-general   { background: rgba(74,222,128,.15); color: var(--green); }
+  .badge-delivery  { background: rgba(139,92,246,.15); color: var(--primary2); }
+
+  .copy-btn {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    font-size: 14px; padding: 2px 4px; border-radius: 4px;
+    transition: color .2s;
+  }
+  .copy-btn:hover { color: var(--primary2); }
+
+  /* ── Chat History ────────────────────────────────── */
+  .sessions-list { max-height: 500px; overflow-y: auto; }
+  .session-row {
+    padding: 14px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; transition: background .15s;
+  }
+  .session-row:hover { background: rgba(108,63,197,.08); }
+  .session-row:last-child { border-bottom: none; }
+  .session-id { font-size: 12px; font-family: monospace; color: var(--primary2); }
+  .session-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .msg-count { background: var(--primary); color: #fff; border-radius: 20px;
+               padding: 2px 8px; font-size: 11px; font-weight: 700; }
+
+  /* ── Thread Modal ────────────────────────────────── */
+  #thread-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    display: none; align-items: center; justify-content: center; z-index: 999;
+  }
+  #thread-modal.open { display: flex; }
+
+  .thread-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; width: 560px; max-height: 80vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  }
+  .thread-header {
+    padding: 18px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .thread-header h3 { font-size: 14px; font-weight: 600; }
+  .close-btn {
+    background: none; border: none; color: var(--muted); font-size: 20px;
+    cursor: pointer; line-height: 1;
+  }
+  .thread-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex;
+                     flex-direction: column; gap: 10px; }
+
+  .msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px;
+                font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+  .msg-user   { background: var(--primary); color: #fff; align-self: flex-end;
+                border-bottom-right-radius: 4px; }
+  .msg-bot    { background: var(--card); border: 1px solid var(--border);
+                align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg-ts { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .msg-wrapper { display: flex; flex-direction: column; }
+  .msg-wrapper.user { align-items: flex-end; }
+  .msg-wrapper.bot  { align-items: flex-start; }
+
+  /* ── Empty State ─────────────────────────────────── */
+  .empty { text-align: center; padding: 48px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+
+  /* ── Spinner ─────────────────────────────────────── */
+  .spinner { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+
+  /* ── Scrollbar ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ─── Login ───────────────────────────────────────────────────────── -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">🛍️</div>
+    <h2>Chatbot Dashboard</h2>
+    <p>Enter your dashboard password to continue</p>
+    <input type="password" id="pwd-input" class="login-input" placeholder="Password" />
+    <button class="login-btn" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error">Incorrect password. Try again.</div>
+  </div>
+</div>
+
+<!-- ─── App ─────────────────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">🛍️ Chatbot</div>
+    <button class="nav-item active" onclick="showPage('analytics', this)">
+      <span class="nav-icon">📊</span> Analytics
+    </button>
+    <button class="nav-item" onclick="showPage('leads', this)">
+      <span class="nav-icon">👤</span> Leads
+    </button>
+    <button class="nav-item" onclick="showPage('chats', this)">
+      <span class="nav-icon">💬</span> Chat History
+    </button>
+    <div class="sidebar-footer">shopify.projekts.pk</div>
+  </nav>
+
+  <div class="main">
+
+    <!-- ── Analytics Page ─────────────────────────── -->
+    <div class="page active" id="page-analytics">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Analytics Overview</div>
+          <div class="page-sub">Live data from your chatbot</div>
+        </div>
+        <button class="refresh-btn" onclick="loadAnalytics()">↻ Refresh</button>
+      </div>
+
+      <div class="stats-grid" id="stats-grid">
+        <div class="spinner">Loading…</div>
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">LEADS — LAST 7 DAYS</div>
+          <canvas id="bar-chart" height="160"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">LEAD TYPES</div>
+          <canvas id="donut-chart" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Leads Page ──────────────────────────────── -->
+    <div class="page" id="page-leads">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Captured Leads</div>
+          <div class="page-sub" id="leads-count">—</div>
+        </div>
+        <button class="refresh-btn" onclick="loadLeads()">↻ Refresh</button>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>All Leads</h3>
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterLeads('', this)">All</button>
+            <button class="filter-tab" onclick="filterLeads('wholesale', this)">Wholesale</button>
+            <button class="filter-tab" onclick="filterLeads('general', this)">General</button>
+            <button class="filter-tab" onclick="filterLeads('delivery', this)">Delivery</button>
+          </div>
+        </div>
+        <div id="leads-table-wrap">
+          <div class="spinner">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Chat History Page ────────────────────────── -->
+    <div class="page" id="page-chats">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Chat History</div>
+          <div class="page-sub" id="sessions-count">—</div>
+        </div>
+        <button class="refresh-btn" onclick="loadChats()">↻ Refresh</button>
+      </div>
+      <div class="card">
+        <div class="sessions-list" id="sessions-list">
+          <div class="spinner">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Thread modal -->
+<div id="thread-modal">
+  <div class="thread-box">
+    <div class="thread-header">
+      <h3 id="thread-title">Conversation</h3>
+      <button class="close-btn" onclick="closeThread()">✕</button>
+    </div>
+    <div class="thread-messages" id="thread-messages"></div>
+  </div>
+</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────
+var API = window.location.origin;
+var TOKEN = '';
+
+// ── Login ─────────────────────────────────────────────────────────────
+var saved = sessionStorage.getItem('dash_token');
+if (saved) { TOKEN = saved; showApp(); }
+
+function doLogin() {
+  var pwd = document.getElementById('pwd-input').value.trim();
+  if (!pwd) return;
+  // Test the token against a real endpoint
+  fetch(API + '/api/analytics?token=' + encodeURIComponent(pwd))
+    .then(function(r) {
+      if (r.status === 401) throw new Error('bad');
+      return r.json();
+    })
+    .then(function() {
+      TOKEN = pwd;
+      sessionStorage.setItem('dash_token', TOKEN);
+      document.getElementById('login-error').style.display = 'none';
+      showApp();
+    })
+    .catch(function() {
+      document.getElementById('login-error').style.display = 'block';
+    });
+}
+
+document.getElementById('pwd-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
+
+function showApp() {
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  loadAnalytics();
+}
+
+// ── Navigation ─────────────────────────────────────────────────────────
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'analytics') loadAnalytics();
+  if (name === 'leads')     loadLeads();
+  if (name === 'chats')     loadChats();
+}
+
+// ── Fetch helper ───────────────────────────────────────────────────────
+function apiFetch(path) {
+  return fetch(API + path + (path.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(TOKEN))
+    .then(function(r) { return r.json(); });
+}
+
+// ── Analytics ──────────────────────────────────────────────────────────
+var _analyticsLoaded = false;
+
+function loadAnalytics() {
+  apiFetch('/api/analytics').then(function(d) {
+    renderStats(d);
+    renderBarChart(d.daily_leads || []);
+    renderDonut(d.lead_types || []);
+    _analyticsLoaded = true;
+  });
+}
+
+function renderStats(d) {
+  var cards = [
+    { icon: '👤', value: d.total_leads,     label: 'Total Leads' },
+    { icon: '🏭', value: d.wholesale_leads, label: 'Wholesale Leads' },
+    { icon: '📋', value: d.general_leads,   label: 'General Leads' },
+    { icon: '📅', value: d.leads_today,     label: 'Leads Today' },
+    { icon: '💬', value: d.total_sessions,  label: 'Total Sessions' },
+    { icon: '📨', value: d.total_messages,  label: 'Total Messages' },
+    { icon: '⚡', value: d.messages_today,  label: 'Messages Today' },
+  ];
+  document.getElementById('stats-grid').innerHTML = cards.map(function(c) {
+    return '<div class="stat-card">' +
+      '<div class="stat-icon">' + c.icon + '</div>' +
+      '<div class="stat-value">' + (c.value || 0) + '</div>' +
+      '<div class="stat-label">' + c.label + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Bar Chart ──────────────────────────────────────────────────────────
+function renderBarChart(data) {
+  var canvas = document.getElementById('bar-chart');
+  var ctx    = canvas.getContext('2d');
+  var W = canvas.offsetWidth; var H = 160;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!data.length) {
+    ctx.fillStyle = '#7c6d9a'; ctx.font = '13px Inter';
+    ctx.fillText('No data yet', W/2 - 40, H/2); return;
+  }
+
+  // Fill last 7 days
+  var days = [];
+  for (var i = 6; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split('T')[0]);
+  }
+  var map = {};
+  data.forEach(function(r) { map[r.day] = r.count; });
+  var values = days.map(function(d) { return map[d] || 0; });
+  var maxV = Math.max.apply(null, values) || 1;
+
+  var pad = 30; var barW = (W - pad * 2) / days.length - 8;
+  values.forEach(function(v, i) {
+    var x = pad + i * ((W - pad * 2) / days.length);
+    var barH = Math.max(4, (v / maxV) * (H - 40));
+    var grad = ctx.createLinearGradient(0, H - 20 - barH, 0, H - 20);
+    grad.addColorStop(0, '#8b5cf6');
+    grad.addColorStop(1, '#6c3fc5');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, H - 20 - barH, barW, barH, 4);
+    ctx.fill();
+    // Label
+    ctx.fillStyle = '#7c6d9a'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
+    var label = days[i].slice(5); // MM-DD
+    ctx.fillText(label, x + barW / 2, H - 4);
+    if (v > 0) {
+      ctx.fillStyle = '#e8e3f4'; ctx.font = '11px Inter';
+      ctx.fillText(v, x + barW / 2, H - 24 - barH);
+    }
+  });
+}
+
+// ── Donut Chart ────────────────────────────────────────────────────────
+function renderDonut(data) {
+  var canvas = document.getElementById('donut-chart');
+  var ctx    = canvas.getContext('2d');
+  var W = canvas.offsetWidth; var H = 160;
+  canvas.width = W; canvas.height = H;
+  ctx.clearRect(0, 0, W, H);
+
+  if (!data.length) {
+    ctx.fillStyle = '#7c6d9a'; ctx.font = '13px Inter';
+    ctx.fillText('No data yet', W / 2 - 40, H / 2); return;
+  }
+
+  var colors = ['#8b5cf6','#fbbf24','#4ade80','#ff6b6b','#38bdf8'];
+  var total  = data.reduce(function(s, r) { return s + r.count; }, 0);
+  var cx = W * 0.38; var cy = H / 2; var r = H * 0.38; var inner = r * 0.55;
+  var start = -Math.PI / 2;
+
+  data.forEach(function(item, i) {
+    var slice = (item.count / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start + slice);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    start += slice;
+  });
+
+  // Inner hole
+  ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2);
+  ctx.fillStyle = '#1e1830'; ctx.fill();
+
+  // Legend
+  var ly = cy - (data.length * 18) / 2 + 9;
+  data.forEach(function(item, i) {
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fillRect(cx + r + 16, ly - 7, 10, 10);
+    ctx.fillStyle = '#e8e3f4'; ctx.font = '12px Inter'; ctx.textAlign = 'left';
+    ctx.fillText(item.type + ' (' + item.count + ')', cx + r + 32, ly + 2);
+    ly += 20;
+  });
+}
+
+// ── Leads ──────────────────────────────────────────────────────────────
+var _leadsFilter = '';
+
+function filterLeads(type, btn) {
+  _leadsFilter = type;
+  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  loadLeads();
+}
+
+function loadLeads() {
+  var url = '/api/leads?limit=200' + (_leadsFilter ? '&type=' + _leadsFilter : '');
+  document.getElementById('leads-table-wrap').innerHTML = '<div class="spinner">Loading…</div>';
+  apiFetch(url).then(function(d) {
+    var leads = d.leads || [];
+    document.getElementById('leads-count').textContent = (d.total || 0) + ' leads captured';
+    if (!leads.length) {
+      document.getElementById('leads-table-wrap').innerHTML =
+        '<div class="empty"><div class="empty-icon">📭</div>No leads yet</div>';
+      return;
+    }
+    var html = '<table><thead><tr>' +
+      '<th>Name</th><th>Email</th><th>Phone</th><th>Business</th><th>Type</th><th>Date</th>' +
+      '</tr></thead><tbody>';
+    leads.forEach(function(l) {
+      var badge = 'badge-' + (l.inquiry_type || 'general');
+      html += '<tr>' +
+        '<td>' + esc(l.name) + '</td>' +
+        '<td>' + esc(l.email) + (l.email ? ' <button class="copy-btn" onclick="copy(\'' + esc(l.email) + '\')">⎘</button>' : '') + '</td>' +
+        '<td>' + esc(l.phone) + (l.phone ? ' <button class="copy-btn" onclick="copy(\'' + esc(l.phone) + '\')">⎘</button>' : '') + '</td>' +
+        '<td>' + esc(l.business_name || '—') + '</td>' +
+        '<td><span class="badge ' + badge + '">' + esc(l.inquiry_type || 'general') + '</span></td>' +
+        '<td>' + fmtDate(l.created_at) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('leads-table-wrap').innerHTML = html;
+  });
+}
+
+// ── Chat History ───────────────────────────────────────────────────────
+function loadChats() {
+  document.getElementById('sessions-list').innerHTML = '<div class="spinner">Loading…</div>';
+  apiFetch('/api/chat-history?limit=100').then(function(d) {
+    var sessions = d.sessions || [];
+    document.getElementById('sessions-count').textContent = (d.total || 0) + ' conversations';
+    if (!sessions.length) {
+      document.getElementById('sessions-list').innerHTML =
+        '<div class="empty"><div class="empty-icon">💬</div>No conversations yet</div>';
+      return;
+    }
+    var html = '';
+    sessions.forEach(function(s) {
+      html += '<div class="session-row" onclick="openThread(\'' + esc(s.session_id) + '\')">' +
+        '<div>' +
+          '<div class="session-id">' + s.session_id.slice(0, 24) + '…</div>' +
+          '<div class="session-meta">Started ' + fmtDate(s.started_at) + ' · Last: ' + fmtDate(s.last_message) + '</div>' +
+        '</div>' +
+        '<span class="msg-count">' + s.message_count + ' msgs</span>' +
+      '</div>';
+    });
+    document.getElementById('sessions-list').innerHTML = html;
+  });
+}
+
+function openThread(sessionId) {
+  document.getElementById('thread-title').textContent = sessionId.slice(0, 20) + '…';
+  document.getElementById('thread-messages').innerHTML = '<div class="spinner">Loading…</div>';
+  document.getElementById('thread-modal').classList.add('open');
+  apiFetch('/api/chat-history/' + encodeURIComponent(sessionId)).then(function(d) {
+    var msgs = d.messages || [];
+    if (!msgs.length) {
+      document.getElementById('thread-messages').innerHTML = '<div class="empty">No messages</div>';
+      return;
+    }
+    var html = '';
+    msgs.forEach(function(m) {
+      html += '<div class="msg-wrapper ' + m.role + '">' +
+        '<div class="msg-bubble msg-' + m.role + '">' + esc(m.content) + '</div>' +
+        '<div class="msg-ts">' + fmtDate(m.timestamp) + '</div>' +
+      '</div>';
+    });
+    document.getElementById('thread-messages').innerHTML = html;
+    document.getElementById('thread-messages').scrollTop = 99999;
+  });
+}
+
+function closeThread() {
+  document.getElementById('thread-modal').classList.remove('open');
+}
+
+document.getElementById('thread-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeThread();
+});
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function esc(s) {
+  return (s || '').toString()
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function fmtDate(s) {
+  if (!s) return '—';
+  var d = new Date(s);
+  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+}
+
+function copy(text) {
+  navigator.clipboard.writeText(text).then(function() {
+    // subtle feedback
+    var el = event.target;
+    el.textContent = '✓'; setTimeout(function() { el.textContent = '⎘'; }, 1500);
+  });
+}
+
+// Resize charts on window resize
+window.addEventListener('resize', function() {
+  if (_analyticsLoaded) loadAnalytics();
+});
+</script>
+</body>
+</html>

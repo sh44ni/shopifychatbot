@@ -276,3 +276,149 @@ async def serve_widget_css():
     if not path.exists():
         raise HTTPException(status_code=404, detail="widget.css not found")
     return FileResponse(path, media_type="text/css")
+
+
+# ─── Dashboard ────────────────────────────────────────────────────────────────
+
+DASHBOARD_DIR = Path(__file__).parent / "dashboard"
+DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "admin123")
+
+
+def _check_auth(request: Request) -> bool:
+    """Simple token auth: ?token=xxx or Authorization: Bearer xxx header."""
+    token = request.query_params.get("token", "")
+    if token == DASHBOARD_PASSWORD:
+        return True
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer ") and auth_header[7:] == DASHBOARD_PASSWORD:
+        return True
+    return False
+
+
+@app.get("/dashboard")
+async def serve_dashboard():
+    path = DASHBOARD_DIR / "index.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Dashboard not found")
+    return FileResponse(path, media_type="text/html")
+
+
+@app.get("/api/analytics")
+async def api_analytics(request: Request):
+    if not _check_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    import sqlite3
+    from datetime import datetime, timedelta
+    db = os.getenv("LEADS_DB", "leads.db")
+    today = datetime.now().strftime("%Y-%m-%d")
+    week_ago = (datetime.now() - timedelta(days=6)).strftime("%Y-%m-%d")
+    try:
+        with sqlite3.connect(db) as conn:
+            total_leads     = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
+            wholesale_leads = conn.execute("SELECT COUNT(*) FROM leads WHERE inquiry_type='wholesale'").fetchone()[0]
+            general_leads   = conn.execute("SELECT COUNT(*) FROM leads WHERE inquiry_type!='wholesale'").fetchone()[0]
+            leads_today     = conn.execute("SELECT COUNT(*) FROM leads WHERE DATE(created_at)=?", (today,)).fetchone()[0]
+            total_messages  = conn.execute("SELECT COUNT(*) FROM chat_history").fetchone()[0]
+            msgs_today      = conn.execute("SELECT COUNT(*) FROM chat_history WHERE DATE(timestamp)=?", (today,)).fetchone()[0]
+            total_sessions  = conn.execute("SELECT COUNT(DISTINCT session_id) FROM chat_history").fetchone()[0]
+            # Daily leads for last 7 days
+            daily_rows = conn.execute(
+                """SELECT DATE(created_at) as day, COUNT(*) as cnt
+                   FROM leads WHERE DATE(created_at) >= ?
+                   GROUP BY day ORDER BY day""",
+                (week_ago,)
+            ).fetchall()
+            # Inquiry type breakdown
+            type_rows = conn.execute(
+                "SELECT inquiry_type, COUNT(*) FROM leads GROUP BY inquiry_type"
+            ).fetchall()
+        return {
+            "total_leads":     total_leads,
+            "wholesale_leads": wholesale_leads,
+            "general_leads":   general_leads,
+            "leads_today":     leads_today,
+            "total_messages":  total_messages,
+            "messages_today":  msgs_today,
+            "total_sessions":  total_sessions,
+            "daily_leads":     [{"day": r[0], "count": r[1]} for r in daily_rows],
+            "lead_types":      [{"type": r[0], "count": r[1]} for r in type_rows],
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/leads")
+async def api_leads(request: Request, limit: int = 100, offset: int = 0, type: str = ""):
+    if not _check_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    import sqlite3
+    db = os.getenv("LEADS_DB", "leads.db")
+    try:
+        with sqlite3.connect(db) as conn:
+            conn.row_factory = sqlite3.Row
+            if type:
+                rows = conn.execute(
+                    "SELECT * FROM leads WHERE inquiry_type=? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (type, limit, offset)
+                ).fetchall()
+                total = conn.execute("SELECT COUNT(*) FROM leads WHERE inquiry_type=?", (type,)).fetchone()[0]
+            else:
+                rows = conn.execute(
+                    "SELECT * FROM leads ORDER BY created_at DESC LIMIT ? OFFSET ?",
+                    (limit, offset)
+                ).fetchall()
+                total = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
+        return {"leads": [dict(r) for r in rows], "total": total}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/chat-history")
+async def api_chat_sessions(request: Request, limit: int = 50, offset: int = 0):
+    if not _check_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    import sqlite3
+    db = os.getenv("LEADS_DB", "leads.db")
+    try:
+        with sqlite3.connect(db) as conn:
+            rows = conn.execute(
+                """SELECT session_id,
+                          COUNT(*) as message_count,
+                          MIN(timestamp) as started_at,
+                          MAX(timestamp) as last_message
+                   FROM chat_history
+                   GROUP BY session_id
+                   ORDER BY last_message DESC
+                   LIMIT ? OFFSET ?""",
+                (limit, offset)
+            ).fetchall()
+            total = conn.execute("SELECT COUNT(DISTINCT session_id) FROM chat_history").fetchone()[0]
+        return {
+            "sessions": [
+                {"session_id": r[0], "message_count": r[1],
+                 "started_at": r[2], "last_message": r[3]}
+                for r in rows
+            ],
+            "total": total,
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/chat-history/{session_id}")
+async def api_chat_thread(session_id: str, request: Request):
+    if not _check_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    import sqlite3
+    db = os.getenv("LEADS_DB", "leads.db")
+    try:
+        with sqlite3.connect(db) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT role, content, timestamp FROM chat_history WHERE session_id=? ORDER BY timestamp ASC",
+                (session_id,)
+            ).fetchall()
+        return {"session_id": session_id, "messages": [dict(r) for r in rows]}
+    except Exception as e:
+        return {"error": str(e)}
+
