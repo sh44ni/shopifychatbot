@@ -95,7 +95,7 @@ def fetch_products() -> list[dict]:
         return _cache["products"][0]
 
     try:
-        resp = requests.get(f"{BASE_URL}/products.json?limit=250", headers=HEADERS, timeout=10)
+        resp = requests.get(f"{BASE_URL}/products.json?limit=250", headers=_get_headers(), timeout=10)
         resp.raise_for_status()
         raw_products = resp.json().get("products", [])
     except Exception as e:
@@ -132,7 +132,7 @@ def fetch_locations() -> list[dict]:
         return _cache["locations"][0]
 
     try:
-        resp = requests.get(f"{BASE_URL}/locations.json", headers=HEADERS, timeout=10)
+        resp = requests.get(f"{BASE_URL}/locations.json", headers=_get_headers(), timeout=10)
         resp.raise_for_status()
         raw_locs = resp.json().get("locations", [])
     except Exception as e:
@@ -161,7 +161,7 @@ def fetch_inventory(location_id: str) -> list[dict]:
     try:
         resp = requests.get(
             f"{BASE_URL}/inventory_levels.json?location_ids={location_id}",
-            headers=HEADERS,
+            headers=_get_headers(),
             timeout=10,
         )
         resp.raise_for_status()
