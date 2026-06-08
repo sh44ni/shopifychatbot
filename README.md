@@ -20,7 +20,7 @@ cp .env.example .env
 nano .env   # fill WHOLESALE_EMAIL at minimum
 
 # 5. Run
-uvicorn main:app --host 0.0.0.0 --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8004
 ```
 
 ## Embed Widget
@@ -50,7 +50,7 @@ server {
     server_name shopify.projekts.pk;
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:8004;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -68,7 +68,7 @@ certbot --nginx -d shopify.projekts.pk
 
 ```bash
 npm install -g pm2
-pm2 start "venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000" --name chatbot
+pm2 start "venv/bin/uvicorn main:app --host 0.0.0.0 --port 8004" --name chatbot
 pm2 save
 pm2 startup
 ```
