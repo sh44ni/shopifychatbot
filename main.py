@@ -26,7 +26,13 @@ load_dotenv()
 import chat_history
 import leads as leads_db
 import shopify as shopify_api
-from email_notify import send_general_lead_alert, send_wholesale_alert
+from email_notify import (
+    send_general_lead_alert,
+    send_wholesale_alert,
+    send_case_alert,
+    send_customer_case_confirmation,
+    send_lead_confirmation,
+)
 from prompts import build_system_prompt
 
 # ─── Config ──────────────────────────────────────────────────────────────────
@@ -128,11 +134,16 @@ async def _save_extracted_lead(session_id: str, lead_data: dict):
         notes=lead_data.get("notes", ""),
     )
     if result["success"]:
-        lead_data["session_id"] = session_id
-        if lead_data.get("inquiry_type") == "wholesale":
-            send_wholesale_alert(lead_data)
-        else:
-            send_general_lead_alert(lead_data)
+            lead_data["session_id"] = session_id
+            if lead_data.get("inquiry_type") == "wholesale":
+                send_wholesale_alert(lead_data)
+            else:
+                send_general_lead_alert(lead_data)
+            if lead_data.get("email"):
+                send_lead_confirmation(
+                    name=lead_data.get("name", ""),
+                    to_email=lead_data["email"],
+                )
         print(f"[Lead] Saved lead #{result['id']} for session {session_id}")
     else:
         print(f"[Lead] Failed to save: {result['error']}")
@@ -274,6 +285,102 @@ async def chat(request: Request, body: ChatRequest):
     return {"reply": clean_reply}
 
 
+# ─── Support Cases ────────────────────────────────────────────────────────────
+
+class CaseRequest(BaseModel):
+    name: str
+    email: str = ""
+    phone: str = ""
+    subject: str = ""
+    description: str = ""
+    session_id: str = ""
+
+
+@app.post("/api/cases")
+async def create_case(body: CaseRequest):
+    """Submit a support case — public endpoint (called from widget or dashboard form)."""
+    result = leads_db.save_case(
+        name=body.name,
+        email=body.email,
+        phone=body.phone,
+        subject=body.subject,
+        description=body.description,
+        session_id=body.session_id,
+    )
+    if not result["success"]:
+        raise HTTPException(status_code=400, detail=result["error"])
+
+    case = leads_db.get_case(result["case_id"])
+    # Fire team + customer emails
+    if case:
+        send_case_alert(case)
+        if body.email:
+            send_customer_case_confirmation(
+                name=body.name,
+                to_email=body.email,
+                case_id=result["case_id"],
+                subject=body.subject,
+            )
+
+    return {"success": True, "case_id": result["case_id"], "id": result["id"]}
+
+
+@app.get("/api/cases")
+async def api_get_cases(request: Request, limit: int = 100, status: str = ""):
+    if not _check_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    import sqlite3 as _sqlite3
+    db = os.getenv("LEADS_DB", "leads.db")
+    try:
+        with _sqlite3.connect(db) as conn:
+            conn.row_factory = _sqlite3.Row
+            query = "SELECT * FROM support_cases"
+            params: list = []
+            if status:
+                query += " WHERE status=?"
+                params.append(status)
+            query += " ORDER BY created_at DESC LIMIT ?"
+            params.append(limit)
+            rows = conn.execute(query, params).fetchall()
+            total_q = "SELECT COUNT(*) FROM support_cases"
+            total_p: list = []
+            if status:
+                total_q += " WHERE status=?"
+                total_p.append(status)
+            total = conn.execute(total_q, total_p).fetchone()[0]
+        return {"cases": [dict(r) for r in rows], "total": total}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.patch("/api/cases/{case_id}")
+async def update_case(case_id: str, request: Request):
+    if not _check_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    body = await request.json()
+    new_status = body.get("status", "")
+    notes = body.get("notes", "")
+    ok = leads_db.update_case_status(case_id, new_status, notes)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Invalid status or case not found")
+    return {"success": True}
+
+
+# ─── Order Lookup ─────────────────────────────────────────────────────────────
+
+@app.get("/api/orders/lookup")
+async def order_lookup(request: Request, q: str = ""):
+    if not _check_auth(request):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if not q.strip():
+        raise HTTPException(status_code=400, detail="Query parameter 'q' is required")
+    import shopify as shopify_api_module
+    order = shopify_api_module.fetch_order(q.strip())
+    if not order:
+        return {"found": False, "order": None}
+    return {"found": True, "order": order}
+
+
 @app.post("/lead")
 async def save_lead_endpoint(body: LeadRequest):
     """Manually save a lead (e.g. from a separate form submission)."""
@@ -374,6 +481,13 @@ async def api_analytics(request: Request):
             type_rows = conn.execute(
                 "SELECT inquiry_type, COUNT(*) FROM leads GROUP BY inquiry_type"
             ).fetchall()
+            # Cases stats
+            total_cases  = conn.execute("SELECT COUNT(*) FROM support_cases").fetchone()[0]
+            cases_open   = conn.execute("SELECT COUNT(*) FROM support_cases WHERE status='open'").fetchone()[0]
+            cases_today  = conn.execute("SELECT COUNT(*) FROM support_cases WHERE DATE(created_at)=?", (today,)).fetchone()[0]
+            case_status_rows = conn.execute(
+                "SELECT status, COUNT(*) FROM support_cases GROUP BY status"
+            ).fetchall()
         return {
             "total_leads":     total_leads,
             "wholesale_leads": wholesale_leads,
@@ -382,8 +496,12 @@ async def api_analytics(request: Request):
             "total_messages":  total_messages,
             "messages_today":  msgs_today,
             "total_sessions":  total_sessions,
+            "total_cases":     total_cases,
+            "cases_open":      cases_open,
+            "cases_today":     cases_today,
             "daily_leads":     [{"day": r[0], "count": r[1]} for r in daily_rows],
             "lead_types":      [{"type": r[0], "count": r[1]} for r in type_rows],
+            "case_statuses":   [{"status": r[0], "count": r[1]} for r in case_status_rows],
         }
     except Exception as e:
         return {"error": str(e)}

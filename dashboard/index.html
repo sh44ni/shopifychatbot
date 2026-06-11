@@ -3,432 +3,628 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Chatbot Dashboard · shopify.projekts.pk</title>
+<title>Nata Dashboard · nata.co.nz</title>
+<link rel="icon" href="https://www.nata.co.nz/cdn/shop/files/top_logo.png?v=1613715845&width=32" />
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
   :root {
-    --bg:       #0d0b14;
-    --surface:  #161222;
-    --card:     #1e1830;
-    --border:   #2a2240;
-    --primary:  #6c3fc5;
-    --primary2: #8b5cf6;
-    --accent:   #ff6b6b;
+    --bg:       #130b05;
+    --surface:  #1c1009;
+    --card:     #251509;
+    --card2:    #2e1c0d;
+    --border:   #4a2f18;
+    --primary:  #c8781a;
+    --primary2: #e8941a;
+    --danger:   #e8421a;
     --green:    #4ade80;
-    --yellow:   #fbbf24;
-    --text:     #e8e3f4;
-    --muted:    #7c6d9a;
+    --teal:     #2dd4bf;
+    --text:     #fdf5e8;
+    --muted:    #8a6545;
     --radius:   14px;
   }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-  }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  /* ── Login Overlay ─────────────────────────────── */
+  /* ── Login ───────────────────────────────────────────── */
   #login-overlay {
-    position: fixed; inset: 0;
-    background: var(--bg);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 9999;
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center; z-index: 9999;
   }
-
   .login-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 40px;
-    width: 360px;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(108,63,197,.3);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; padding: 44px 40px; width: 380px; text-align: center;
+    box-shadow: 0 20px 60px rgba(200,120,26,.18);
   }
-
-  .login-logo { font-size: 40px; margin-bottom: 12px; }
-  .login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .login-logo { width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 18px; display: block; }
+  .login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
   .login-card p  { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
-
   .login-input {
     width: 100%; padding: 12px 16px;
     background: var(--card); border: 1.5px solid var(--border);
     border-radius: 10px; color: var(--text); font-size: 14px;
-    font-family: inherit; outline: none; margin-bottom: 14px;
+    font-family: inherit; outline: none; margin-bottom: 12px;
     transition: border-color .2s;
   }
   .login-input:focus { border-color: var(--primary); }
-
   .login-btn {
-    width: 100%; padding: 12px;
+    width: 100%; padding: 13px;
     background: linear-gradient(135deg, var(--primary), var(--primary2));
-    border: none; border-radius: 10px; color: #fff;
-    font-size: 15px; font-weight: 600; cursor: pointer;
-    font-family: inherit; transition: opacity .2s;
+    border: none; border-radius: 10px; color: #fff; font-size: 15px;
+    font-weight: 600; cursor: pointer; font-family: inherit;
+    transition: opacity .2s;
   }
   .login-btn:hover { opacity: .9; }
-  .login-error { color: var(--accent); font-size: 13px; margin-top: 10px; display: none; }
+  .login-error { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; }
 
-  /* ── Layout ────────────────────────────────────── */
+  /* ── Layout ──────────────────────────────────────────── */
   #app { display: none; }
 
   .sidebar {
-    position: fixed; top: 0; left: 0;
-    width: 220px; height: 100vh;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    padding: 24px 16px;
-    display: flex; flex-direction: column; gap: 4px;
+    position: fixed; top: 0; left: 0; width: 230px; height: 100vh;
+    background: var(--surface); border-right: 1px solid var(--border);
+    padding: 20px 14px; display: flex; flex-direction: column; gap: 2px;
+    overflow-y: auto;
   }
-
   .sidebar-logo {
-    font-size: 18px; font-weight: 700; color: var(--primary2);
-    padding: 0 8px 20px; border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
-    display: flex; align-items: center; gap: 8px;
-  }
-
-  .nav-item {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 12px; border-radius: 10px;
-    font-size: 14px; font-weight: 500; color: var(--muted);
-    cursor: pointer; transition: all .2s; border: none;
-    background: none; width: 100%; text-align: left; font-family: inherit;
+    padding: 4px 8px 20px; border-bottom: 1px solid var(--border); margin-bottom: 10px;
+  }
+  .sidebar-logo img { width: 36px; height: 36px; border-radius: 50%; }
+  .sidebar-logo-text { font-size: 15px; font-weight: 700; color: var(--primary2); line-height: 1.2; }
+  .sidebar-logo-sub  { font-size: 10px; color: var(--muted); }
+
+  .nav-section { font-size: 10px; font-weight: 700; color: var(--muted);
+                 letter-spacing: .08em; text-transform: uppercase;
+                 padding: 14px 10px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: 10px; font-size: 13.5px; font-weight: 500; color: var(--muted);
+    cursor: pointer; border: none; background: none; width: 100%;
+    text-align: left; font-family: inherit; transition: all .15s;
   }
   .nav-item:hover  { background: var(--card); color: var(--text); }
-  .nav-item.active { background: rgba(108,63,197,.2); color: var(--primary2); }
-  .nav-icon { font-size: 17px; }
+  .nav-item.active { background: rgba(200,120,26,.18); color: var(--primary2); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
 
   .sidebar-footer {
-    margin-top: auto; padding-top: 16px;
-    border-top: 1px solid var(--border);
-    font-size: 12px; color: var(--muted); text-align: center;
+    margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted); text-align: center;
   }
+  .sidebar-footer a { color: var(--primary); text-decoration: none; }
 
-  .main {
-    margin-left: 220px;
-    padding: 32px;
-    min-height: 100vh;
-  }
+  .main { margin-left: 230px; padding: 28px 32px; min-height: 100vh; }
 
   .page { display: none; }
   .page.active { display: block; }
 
-  /* ── Header ────────────────────────────────────── */
+  /* ── Page Header ──────────────────────────────────────── */
   .page-header {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 28px;
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
   }
-  .page-title { font-size: 22px; font-weight: 700; }
+  .page-title { font-size: 22px; font-weight: 800; }
   .page-sub   { font-size: 13px; color: var(--muted); margin-top: 3px; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
 
-  .refresh-btn {
-    padding: 8px 16px;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-size: 13px;
-    font-weight: 500; cursor: pointer; font-family: inherit;
-    transition: border-color .2s;
+  .btn {
+    padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; border: 1px solid var(--border);
+    transition: all .2s;
   }
-  .refresh-btn:hover { border-color: var(--primary); }
+  .btn-ghost  { background: var(--card); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--primary); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary2));
+    border-color: transparent; color: #fff;
+  }
+  .btn-primary:hover { opacity: .9; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn-danger { background: rgba(232,66,26,.15); border-color: var(--danger); color: var(--danger); }
 
-  /* ── Stat Cards ────────────────────────────────── */
+  /* ── Stat Cards ───────────────────────────────────────── */
   .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 16px; margin-bottom: 28px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px; margin-bottom: 24px;
   }
-
   .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    transition: border-color .2s, transform .2s;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+    transition: border-color .2s, transform .15s;
   }
   .stat-card:hover { border-color: var(--primary); transform: translateY(-2px); }
+  .stat-icon  { font-size: 22px; margin-bottom: 10px; }
+  .stat-value { font-size: 30px; font-weight: 800; line-height: 1; }
+  .stat-label { font-size: 11.5px; color: var(--muted); margin-top: 4px; font-weight: 500; }
 
-  .stat-icon { font-size: 24px; margin-bottom: 10px; }
-  .stat-value { font-size: 30px; font-weight: 700; line-height: 1; }
-  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 500; }
-
-  /* ── Charts Row ─────────────────────────────────── */
-  .charts-row {
-    display: grid; grid-template-columns: 2fr 1fr;
-    gap: 16px; margin-bottom: 28px;
-  }
-
-  .chart-card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 20px;
-  }
-  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--muted); }
+  /* ── Charts ──────────────────────────────────────────── */
+  .charts-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .chart-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+                 letter-spacing: .06em; margin-bottom: 14px; }
   canvas { width: 100% !important; }
 
-  /* ── Table ──────────────────────────────────────── */
-  .card {
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-  }
-
+  /* ── Card / Table ─────────────────────────────────────── */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
   .card-header {
-    padding: 18px 20px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
   }
-  .card-header h3 { font-size: 15px; font-weight: 600; }
+  .card-header h3 { font-size: 14px; font-weight: 600; }
 
-  .filter-tabs { display: flex; gap: 6px; }
+  .filter-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
   .filter-tab {
     padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
     cursor: pointer; border: 1.5px solid var(--border);
-    background: none; color: var(--muted); font-family: inherit;
-    transition: all .2s;
+    background: none; color: var(--muted); font-family: inherit; transition: all .2s;
   }
-  .filter-tab.active, .filter-tab:hover {
-    background: var(--primary); border-color: var(--primary); color: #fff;
-  }
+  .filter-tab.active, .filter-tab:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
 
   table { width: 100%; border-collapse: collapse; }
   th {
-    padding: 12px 16px; text-align: left; font-size: 11px;
-    font-weight: 600; color: var(--muted); text-transform: uppercase;
-    letter-spacing: .06em; border-bottom: 1px solid var(--border);
+    padding: 11px 16px; text-align: left; font-size: 10.5px; font-weight: 700;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+    border-bottom: 1px solid var(--border);
   }
-  td {
-    padding: 13px 16px; font-size: 13px;
-    border-bottom: 1px solid rgba(42,34,64,.5);
-  }
+  td { padding: 12px 16px; font-size: 13px; border-bottom: 1px solid rgba(74,47,24,.5); }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: rgba(108,63,197,.06); }
+  tr:hover td { background: rgba(200,120,26,.05); }
 
+  /* ── Badges ──────────────────────────────────────────── */
   .badge {
     display: inline-block; padding: 3px 10px; border-radius: 20px;
     font-size: 11px; font-weight: 600;
   }
-  .badge-wholesale { background: rgba(251,191,36,.15); color: var(--yellow); }
-  .badge-general   { background: rgba(74,222,128,.15); color: var(--green); }
-  .badge-delivery  { background: rgba(139,92,246,.15); color: var(--primary2); }
+  .badge-wholesale  { background: rgba(251,191,36,.15); color: #fbbf24; }
+  .badge-general    { background: rgba(74,222,128,.15);  color: var(--green); }
+  .badge-delivery   { background: rgba(45,212,191,.15);  color: var(--teal); }
+  .badge-order      { background: rgba(200,120,26,.15);  color: var(--primary2); }
+  .badge-support    { background: rgba(232,66,26,.12);   color: #f87171; }
+  .badge-open       { background: rgba(232,66,26,.12);   color: #f87171; }
+  .badge-in_progress{ background: rgba(251,191,36,.15);  color: #fbbf24; }
+  .badge-resolved   { background: rgba(74,222,128,.15);  color: var(--green); }
+  .badge-closed     { background: rgba(100,116,139,.15); color: #94a3b8; }
+  .badge-paid       { background: rgba(74,222,128,.15);  color: var(--green); }
+  .badge-pending    { background: rgba(251,191,36,.15);  color: #fbbf24; }
+  .badge-refunded   { background: rgba(232,66,26,.12);   color: #f87171; }
+  .badge-fulfilled  { background: rgba(45,212,191,.15);  color: var(--teal); }
+  .badge-unfulfilled{ background: rgba(251,191,36,.15);  color: #fbbf24; }
+  .badge-partial    { background: rgba(200,120,26,.15);  color: var(--primary2); }
 
   .copy-btn {
     background: none; border: none; cursor: pointer; color: var(--muted);
-    font-size: 14px; padding: 2px 4px; border-radius: 4px;
-    transition: color .2s;
+    font-size: 13px; padding: 2px 4px; border-radius: 4px; transition: color .2s;
   }
   .copy-btn:hover { color: var(--primary2); }
 
-  /* ── Chat History ────────────────────────────────── */
-  .sessions-list { max-height: 500px; overflow-y: auto; }
+  /* ── Chat History ────────────────────────────────────── */
+  .sessions-list { max-height: 520px; overflow-y: auto; }
   .session-row {
     padding: 14px 20px; border-bottom: 1px solid var(--border);
     display: flex; align-items: center; justify-content: space-between;
     cursor: pointer; transition: background .15s;
   }
-  .session-row:hover { background: rgba(108,63,197,.08); }
+  .session-row:hover { background: rgba(200,120,26,.07); }
   .session-row:last-child { border-bottom: none; }
-  .session-id { font-size: 12px; font-family: monospace; color: var(--primary2); }
+  .session-id   { font-size: 12px; font-family: monospace; color: var(--primary2); }
   .session-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .msg-count { background: var(--primary); color: #fff; border-radius: 20px;
-               padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  .msg-count    { background: var(--primary); color: #fff; border-radius: 20px;
+                  padding: 2px 8px; font-size: 11px; font-weight: 700; }
 
-  /* ── Thread Modal ────────────────────────────────── */
-  #thread-modal {
-    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  /* ── Order Lookup ────────────────────────────────────── */
+  .search-bar {
+    display: flex; gap: 10px; margin-bottom: 20px;
+  }
+  .search-input {
+    flex: 1; padding: 12px 16px; background: var(--card);
+    border: 1.5px solid var(--border); border-radius: 10px;
+    color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+    transition: border-color .2s;
+  }
+  .search-input:focus { border-color: var(--primary); }
+  .order-result {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+  }
+  .order-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .order-number { font-size: 24px; font-weight: 800; color: var(--primary2); }
+  .order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .order-field-label { font-size: 11px; color: var(--muted); font-weight: 600;
+                       text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .order-field-value { font-size: 14px; font-weight: 600; }
+  .order-items { border-top: 1px solid var(--border); padding-top: 16px; }
+  .order-item  { display: flex; justify-content: space-between; padding: 8px 0;
+                 border-bottom: 1px solid rgba(74,47,24,.4); font-size: 13px; }
+  .order-item:last-child { border-bottom: none; }
+  .tracking-row { background: var(--card2); border: 1px solid var(--border);
+                  border-radius: 10px; padding: 14px 16px; margin-top: 14px; }
+  .tracking-row a { color: var(--primary2); text-decoration: none; }
+
+  /* ── Modals ──────────────────────────────────────────── */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.75);
     display: none; align-items: center; justify-content: center; z-index: 999;
+    padding: 20px;
   }
-  #thread-modal.open { display: flex; }
-
-  .thread-box {
+  .modal-bg.open { display: flex; }
+  .modal-box {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 20px; width: 560px; max-height: 80vh;
+    border-radius: 20px; width: 100%; max-width: 560px; max-height: 90vh;
     display: flex; flex-direction: column; overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    box-shadow: 0 24px 64px rgba(0,0,0,.6);
   }
-  .thread-header {
-    padding: 18px 20px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
+  .modal-header {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
   }
-  .thread-header h3 { font-size: 14px; font-weight: 600; }
-  .close-btn {
-    background: none; border: none; color: var(--muted); font-size: 20px;
-    cursor: pointer; line-height: 1;
-  }
-  .thread-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex;
-                     flex-direction: column; gap: 10px; }
+  .modal-header h3 { font-size: 15px; font-weight: 700; }
+  .close-btn { background: none; border: none; color: var(--muted); font-size: 20px;
+               cursor: pointer; line-height: 1; padding: 2px 6px; }
+  .close-btn:hover { color: var(--text); }
+  .modal-body { flex: 1; overflow-y: auto; padding: 22px; }
+  .modal-footer { padding: 16px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
 
-  .msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px;
-                font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
-  .msg-user   { background: var(--primary); color: #fff; align-self: flex-end;
-                border-bottom-right-radius: 4px; }
-  .msg-bot    { background: var(--card); border: 1px solid var(--border);
-                align-self: flex-start; border-bottom-left-radius: 4px; }
-  .msg-ts { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  /* Form elements in modal */
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 12px; font-weight: 600; color: var(--muted);
+                    text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; padding: 10px 14px; background: var(--card);
+    border: 1.5px solid var(--border); border-radius: 9px;
+    color: var(--text); font-size: 13.5px; font-family: inherit; outline: none;
+    transition: border-color .2s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--primary); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .form-select option { background: var(--card); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Thread messages */
+  .thread-messages { display: flex; flex-direction: column; gap: 10px; }
   .msg-wrapper { display: flex; flex-direction: column; }
   .msg-wrapper.user { align-items: flex-end; }
   .msg-wrapper.bot  { align-items: flex-start; }
+  .msg-bubble { max-width: 80%; padding: 10px 14px; border-radius: 14px;
+                font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+  .msg-user { background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+  .msg-bot  { background: var(--card2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg-ts   { font-size: 10px; color: var(--muted); margin-top: 3px; }
 
-  /* ── Empty State ─────────────────────────────────── */
-  .empty { text-align: center; padding: 48px; color: var(--muted); }
+  /* Case detail */
+  .case-detail-row { display: flex; padding: 8px 0; border-bottom: 1px solid rgba(74,47,24,.4); }
+  .case-detail-row:last-child { border-bottom: none; }
+  .case-detail-label { font-size: 12px; color: var(--muted); font-weight: 600; width: 130px; flex-shrink: 0; }
+  .case-detail-value { font-size: 13px; flex: 1; }
+
+  /* ── Misc ────────────────────────────────────────────── */
+  .empty { text-align: center; padding: 52px 24px; color: var(--muted); }
   .empty-icon { font-size: 40px; margin-bottom: 12px; }
-
-  /* ── Spinner ─────────────────────────────────────── */
   .spinner { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; }
+  .alert { padding: 12px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; }
+  .alert-success { background: rgba(74,222,128,.1); border: 1px solid rgba(74,222,128,.3); color: var(--green); }
+  .alert-error   { background: rgba(232,66,26,.1);  border: 1px solid rgba(232,66,26,.3);  color: var(--danger); }
 
-  /* ── Scrollbar ───────────────────────────────────── */
-  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; padding: 16px 8px; }
+    .sidebar-logo-text, .sidebar-logo-sub, .nav-item span:not(.nav-icon), .nav-section, .sidebar-footer { display: none; }
+    .main { margin-left: 60px; padding: 20px 16px; }
+    .charts-row { grid-template-columns: 1fr; }
+    .order-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
 
-<!-- ─── Login ───────────────────────────────────────────────────────── -->
+<!-- ─── Login ─────────────────────────────────────────────────────────── -->
 <div id="login-overlay">
   <div class="login-card">
-    <div class="login-logo">🛍️</div>
-    <h2>Chatbot Dashboard</h2>
-    <p>Enter your dashboard password to continue</p>
-    <input type="password" id="pwd-input" class="login-input" placeholder="Password" />
+    <img class="login-logo" src="https://www.nata.co.nz/cdn/shop/files/top_logo.png?v=1613715845&width=150" alt="Nata" />
+    <h2>Nata Dashboard</h2>
+    <p>Enter your password to continue</p>
+    <input type="password" id="pwd-input" class="login-input" placeholder="Dashboard password" />
     <button class="login-btn" onclick="doLogin()">Sign In</button>
     <div class="login-error" id="login-error">Incorrect password. Try again.</div>
   </div>
 </div>
 
-<!-- ─── App ─────────────────────────────────────────────────────────── -->
+<!-- ─── App ───────────────────────────────────────────────────────────── -->
 <div id="app">
 
   <!-- Sidebar -->
   <nav class="sidebar">
-    <div class="sidebar-logo">🛍️ Chatbot</div>
+    <div class="sidebar-logo">
+      <img src="https://www.nata.co.nz/cdn/shop/files/top_logo.png?v=1613715845&width=80" alt="Nata" />
+      <div>
+        <div class="sidebar-logo-text">Nata</div>
+        <div class="sidebar-logo-sub">Portuguese Bakery</div>
+      </div>
+    </div>
+
+    <div class="nav-section">Overview</div>
     <button class="nav-item active" onclick="showPage('analytics', this)">
-      <span class="nav-icon">📊</span> Analytics
+      <span class="nav-icon">📊</span><span>Analytics</span>
     </button>
+
+    <div class="nav-section">Customers</div>
     <button class="nav-item" onclick="showPage('leads', this)">
-      <span class="nav-icon">👤</span> Leads
+      <span class="nav-icon">👥</span><span>Leads</span>
     </button>
+    <button class="nav-item" onclick="showPage('wholesale', this)">
+      <span class="nav-icon">🏭</span><span>Wholesale</span>
+    </button>
+    <button class="nav-item" onclick="showPage('cases', this)">
+      <span class="nav-icon">🎫</span><span>Support Cases</span>
+    </button>
+
+    <div class="nav-section">Shopify</div>
+    <button class="nav-item" onclick="showPage('orders', this)">
+      <span class="nav-icon">📦</span><span>Order Lookup</span>
+    </button>
+
+    <div class="nav-section">Conversations</div>
     <button class="nav-item" onclick="showPage('chats', this)">
-      <span class="nav-icon">💬</span> Chat History
+      <span class="nav-icon">💬</span><span>Chat History</span>
     </button>
-    <div class="sidebar-footer">shopify.projekts.pk</div>
+
+    <div class="sidebar-footer">
+      <a href="https://nata.co.nz" target="_blank">nata.co.nz</a>
+    </div>
   </nav>
 
   <div class="main">
 
-    <!-- ── Analytics Page ─────────────────────────── -->
+    <!-- ── Analytics ──────────────────────────────────── -->
     <div class="page active" id="page-analytics">
       <div class="page-header">
         <div>
           <div class="page-title">Analytics Overview</div>
-          <div class="page-sub">Live data from your chatbot</div>
+          <div class="page-sub">Live data — refreshes on load</div>
         </div>
-        <button class="refresh-btn" onclick="loadAnalytics()">↻ Refresh</button>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadAnalytics()">↻ Refresh</button>
+        </div>
       </div>
 
-      <div class="stats-grid" id="stats-grid">
-        <div class="spinner">Loading…</div>
-      </div>
+      <div class="stats-grid" id="stats-grid"><div class="spinner">Loading…</div></div>
 
       <div class="charts-row">
         <div class="chart-card">
-          <div class="chart-title">LEADS — LAST 7 DAYS</div>
-          <canvas id="bar-chart" height="160"></canvas>
+          <div class="chart-title">Leads — Last 7 Days</div>
+          <canvas id="bar-chart" height="140"></canvas>
         </div>
         <div class="chart-card">
-          <div class="chart-title">LEAD TYPES</div>
-          <canvas id="donut-chart" height="160"></canvas>
+          <div class="chart-title">Lead Types</div>
+          <canvas id="donut-leads" height="140"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Case Statuses</div>
+          <canvas id="donut-cases" height="140"></canvas>
         </div>
       </div>
     </div>
 
-    <!-- ── Leads Page ──────────────────────────────── -->
+    <!-- ── Leads ───────────────────────────────────────── -->
     <div class="page" id="page-leads">
       <div class="page-header">
         <div>
           <div class="page-title">Captured Leads</div>
           <div class="page-sub" id="leads-count">—</div>
         </div>
-        <button class="refresh-btn" onclick="loadLeads()">↻ Refresh</button>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadLeads()">↻ Refresh</button>
+          <button class="btn btn-primary" onclick="openLeadForm()">+ Add Lead</button>
+        </div>
       </div>
-
       <div class="card">
         <div class="card-header">
           <h3>All Leads</h3>
           <div class="filter-tabs">
-            <button class="filter-tab active" onclick="filterLeads('', this)">All</button>
-            <button class="filter-tab" onclick="filterLeads('wholesale', this)">Wholesale</button>
-            <button class="filter-tab" onclick="filterLeads('general', this)">General</button>
-            <button class="filter-tab" onclick="filterLeads('delivery', this)">Delivery</button>
+            <button class="filter-tab active" onclick="filterLeads('',this)">All</button>
+            <button class="filter-tab" onclick="filterLeads('wholesale',this)">Wholesale</button>
+            <button class="filter-tab" onclick="filterLeads('general',this)">General</button>
+            <button class="filter-tab" onclick="filterLeads('delivery',this)">Delivery</button>
+            <button class="filter-tab" onclick="filterLeads('order',this)">Order</button>
           </div>
         </div>
-        <div id="leads-table-wrap">
-          <div class="spinner">Loading…</div>
-        </div>
+        <div id="leads-table-wrap"><div class="spinner">Loading…</div></div>
       </div>
     </div>
 
-    <!-- ── Chat History Page ────────────────────────── -->
+    <!-- ── Wholesale ───────────────────────────────────── -->
+    <div class="page" id="page-wholesale">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Wholesale Inquiries</div>
+          <div class="page-sub" id="wholesale-count">—</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadWholesale()">↻ Refresh</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Wholesale Leads</h3></div>
+        <div id="wholesale-table-wrap"><div class="spinner">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── Support Cases ───────────────────────────────── -->
+    <div class="page" id="page-cases">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Support Cases</div>
+          <div class="page-sub" id="cases-count">—</div>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadCases()">↻ Refresh</button>
+          <button class="btn btn-primary" onclick="openCaseForm()">+ New Case</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h3>All Cases</h3>
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterCases('',this)">All</button>
+            <button class="filter-tab" onclick="filterCases('open',this)">Open</button>
+            <button class="filter-tab" onclick="filterCases('in_progress',this)">In Progress</button>
+            <button class="filter-tab" onclick="filterCases('resolved',this)">Resolved</button>
+            <button class="filter-tab" onclick="filterCases('closed',this)">Closed</button>
+          </div>
+        </div>
+        <div id="cases-table-wrap"><div class="spinner">Loading…</div></div>
+      </div>
+    </div>
+
+    <!-- ── Order Lookup ────────────────────────────────── -->
+    <div class="page" id="page-orders">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Order Lookup</div>
+          <div class="page-sub">Search by order number or customer email — live Shopify data</div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <input type="text" id="order-query" class="search-input"
+               placeholder="Order number (e.g. #1001) or customer email…"
+               onkeydown="if(event.key==='Enter') lookupOrder()" />
+        <button class="btn btn-primary" onclick="lookupOrder()">Search</button>
+      </div>
+      <div id="order-result"></div>
+    </div>
+
+    <!-- ── Chat History ────────────────────────────────── -->
     <div class="page" id="page-chats">
       <div class="page-header">
         <div>
           <div class="page-title">Chat History</div>
           <div class="page-sub" id="sessions-count">—</div>
         </div>
-        <button class="refresh-btn" onclick="loadChats()">↻ Refresh</button>
+        <div class="header-actions">
+          <button class="btn btn-ghost" onclick="loadChats()">↻ Refresh</button>
+        </div>
       </div>
       <div class="card">
-        <div class="sessions-list" id="sessions-list">
-          <div class="spinner">Loading…</div>
-        </div>
+        <div class="sessions-list" id="sessions-list"><div class="spinner">Loading…</div></div>
       </div>
     </div>
 
   </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- Thread modal -->
-<div id="thread-modal">
-  <div class="thread-box">
-    <div class="thread-header">
+<!-- ── Thread Modal ────────────────────────────────────── -->
+<div class="modal-bg" id="thread-modal">
+  <div class="modal-box">
+    <div class="modal-header">
       <h3 id="thread-title">Conversation</h3>
-      <button class="close-btn" onclick="closeThread()">✕</button>
+      <button class="close-btn" onclick="closeModal('thread-modal')">✕</button>
     </div>
-    <div class="thread-messages" id="thread-messages"></div>
+    <div class="modal-body">
+      <div class="thread-messages" id="thread-messages"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Case Detail Modal ───────────────────────────────── -->
+<div class="modal-bg" id="case-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="case-modal-title">Case Detail</h3>
+      <button class="close-btn" onclick="closeModal('case-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="case-modal-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('case-modal')">Close</button>
+      <button class="btn btn-primary btn-sm" id="case-save-btn" onclick="saveCaseStatus()">Save Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── New Case Form Modal ─────────────────────────────── -->
+<div class="modal-bg" id="new-case-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>New Support Case</h3>
+      <button class="close-btn" onclick="closeModal('new-case-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="case-form-msg"></div>
+      <div class="form-row-2">
+        <div class="form-row"><label>Name *</label><input class="form-input" id="cf-name" placeholder="Customer name" /></div>
+        <div class="form-row"><label>Email</label><input class="form-input" id="cf-email" type="email" placeholder="email@example.com" /></div>
+      </div>
+      <div class="form-row"><label>Phone</label><input class="form-input" id="cf-phone" placeholder="+64 …" /></div>
+      <div class="form-row"><label>Subject *</label><input class="form-input" id="cf-subject" placeholder="Brief description of the issue" /></div>
+      <div class="form-row"><label>Description</label><textarea class="form-textarea" id="cf-description" placeholder="Full details…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('new-case-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitCase()">Create Case</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── New Lead Form Modal ─────────────────────────────── -->
+<div class="modal-bg" id="new-lead-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Add Lead</h3>
+      <button class="close-btn" onclick="closeModal('new-lead-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="lead-form-msg"></div>
+      <div class="form-row-2">
+        <div class="form-row"><label>Name *</label><input class="form-input" id="lf-name" placeholder="Customer name" /></div>
+        <div class="form-row"><label>Email</label><input class="form-input" id="lf-email" type="email" placeholder="email@example.com" /></div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-row"><label>Phone</label><input class="form-input" id="lf-phone" placeholder="+64 …" /></div>
+        <div class="form-row"><label>Inquiry Type</label>
+          <select class="form-select" id="lf-type">
+            <option value="general">General</option>
+            <option value="wholesale">Wholesale</option>
+            <option value="delivery">Delivery</option>
+            <option value="order">Order</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row"><label>Business Name</label><input class="form-input" id="lf-business" placeholder="Company (optional)" /></div>
+      <div class="form-row"><label>Notes</label><textarea class="form-textarea" id="lf-notes" placeholder="Additional details…"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('new-lead-modal')">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitLead()">Save Lead</button>
+    </div>
   </div>
 </div>
 
 <script>
-// ── Config ────────────────────────────────────────────────────────────
-var API = window.location.origin;
+// ── Config ─────────────────────────────────────────────────────────────
+var API   = window.location.origin;
 var TOKEN = '';
 
-// ── Login ─────────────────────────────────────────────────────────────
-var saved = sessionStorage.getItem('dash_token');
+// ── Login ───────────────────────────────────────────────────────────────
+var saved = sessionStorage.getItem('nata_dash_token');
 if (saved) { TOKEN = saved; showApp(); }
 
 function doLogin() {
   var pwd = document.getElementById('pwd-input').value.trim();
   if (!pwd) return;
-  // Test the token against a real endpoint
   fetch(API + '/api/analytics?token=' + encodeURIComponent(pwd))
-    .then(function(r) {
-      if (r.status === 401) throw new Error('bad');
-      return r.json();
-    })
+    .then(function(r) { if (r.status === 401) throw new Error('bad'); return r.json(); })
     .then(function() {
       TOKEN = pwd;
-      sessionStorage.setItem('dash_token', TOKEN);
+      sessionStorage.setItem('nata_dash_token', TOKEN);
       document.getElementById('login-error').style.display = 'none';
       showApp();
     })
-    .catch(function() {
-      document.getElementById('login-error').style.display = 'block';
-    });
+    .catch(function() { document.getElementById('login-error').style.display = 'block'; });
 }
-
-document.getElementById('pwd-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') doLogin();
-});
+document.getElementById('pwd-input').addEventListener('keydown', function(e) { if (e.key==='Enter') doLogin(); });
 
 function showApp() {
   document.getElementById('login-overlay').style.display = 'none';
@@ -436,150 +632,156 @@ function showApp() {
   loadAnalytics();
 }
 
-// ── Navigation ─────────────────────────────────────────────────────────
+// ── Navigation ──────────────────────────────────────────────────────────
 function showPage(name, btn) {
   document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
   document.querySelectorAll('.nav-item').forEach(function(n) { n.classList.remove('active'); });
   document.getElementById('page-' + name).classList.add('active');
   btn.classList.add('active');
-  if (name === 'analytics') loadAnalytics();
-  if (name === 'leads')     loadLeads();
-  if (name === 'chats')     loadChats();
+  if (name === 'analytics')  loadAnalytics();
+  if (name === 'leads')      loadLeads();
+  if (name === 'wholesale')  loadWholesale();
+  if (name === 'cases')      loadCases();
+  if (name === 'chats')      loadChats();
 }
 
-// ── Fetch helper ───────────────────────────────────────────────────────
+// ── Fetch helper ────────────────────────────────────────────────────────
 function apiFetch(path) {
   return fetch(API + path + (path.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(TOKEN))
     .then(function(r) { return r.json(); });
 }
 
-// ── Analytics ──────────────────────────────────────────────────────────
+function apiPost(path, body) {
+  return fetch(API + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(function(r) { return r.json(); });
+}
+
+function apiPatch(path, body) {
+  return fetch(API + path + (path.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(TOKEN), {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).then(function(r) { return r.json(); });
+}
+
+// ── Analytics ───────────────────────────────────────────────────────────
 var _analyticsLoaded = false;
 
 function loadAnalytics() {
   apiFetch('/api/analytics').then(function(d) {
     renderStats(d);
     renderBarChart(d.daily_leads || []);
-    renderDonut(d.lead_types || []);
+    renderDonut('donut-leads', d.lead_types || [], 'type');
+    renderDonut('donut-cases', d.case_statuses || [], 'status');
     _analyticsLoaded = true;
   });
 }
 
 function renderStats(d) {
   var cards = [
-    { icon: '👤', value: d.total_leads,     label: 'Total Leads' },
-    { icon: '🏭', value: d.wholesale_leads, label: 'Wholesale Leads' },
-    { icon: '📋', value: d.general_leads,   label: 'General Leads' },
-    { icon: '📅', value: d.leads_today,     label: 'Leads Today' },
-    { icon: '💬', value: d.total_sessions,  label: 'Total Sessions' },
-    { icon: '📨', value: d.total_messages,  label: 'Total Messages' },
-    { icon: '⚡', value: d.messages_today,  label: 'Messages Today' },
+    { icon: '👥', value: d.total_leads,     label: 'Total Leads',     color: '' },
+    { icon: '🏭', value: d.wholesale_leads, label: 'Wholesale Leads', color: '' },
+    { icon: '📋', value: d.general_leads,   label: 'General Leads',   color: '' },
+    { icon: '📅', value: d.leads_today,     label: 'Leads Today',     color: 'color:var(--primary2)' },
+    { icon: '🎫', value: d.total_cases,     label: 'Total Cases',     color: '' },
+    { icon: '🔓', value: d.cases_open,      label: 'Open Cases',      color: 'color:#f87171' },
+    { icon: '💬', value: d.total_sessions,  label: 'Sessions',        color: '' },
+    { icon: '📨', value: d.total_messages,  label: 'Total Messages',  color: '' },
+    { icon: '⚡', value: d.messages_today,  label: 'Messages Today',  color: 'color:var(--primary2)' },
   ];
   document.getElementById('stats-grid').innerHTML = cards.map(function(c) {
     return '<div class="stat-card">' +
       '<div class="stat-icon">' + c.icon + '</div>' +
-      '<div class="stat-value">' + (c.value || 0) + '</div>' +
+      '<div class="stat-value" style="' + c.color + '">' + (c.value !== undefined ? c.value : 0) + '</div>' +
       '<div class="stat-label">' + c.label + '</div>' +
     '</div>';
   }).join('');
 }
 
-// ── Bar Chart ──────────────────────────────────────────────────────────
+// ── Bar Chart ───────────────────────────────────────────────────────────
 function renderBarChart(data) {
   var canvas = document.getElementById('bar-chart');
-  var ctx    = canvas.getContext('2d');
-  var W = canvas.offsetWidth; var H = 160;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.offsetWidth || 400; var H = 140;
   canvas.width = W; canvas.height = H;
   ctx.clearRect(0, 0, W, H);
 
-  if (!data.length) {
-    ctx.fillStyle = '#7c6d9a'; ctx.font = '13px Inter';
-    ctx.fillText('No data yet', W/2 - 40, H/2); return;
-  }
-
-  // Fill last 7 days
   var days = [];
   for (var i = 6; i >= 0; i--) {
     var d = new Date(); d.setDate(d.getDate() - i);
     days.push(d.toISOString().split('T')[0]);
   }
   var map = {};
-  data.forEach(function(r) { map[r.day] = r.count; });
+  (data || []).forEach(function(r) { map[r.day] = r.count; });
   var values = days.map(function(d) { return map[d] || 0; });
   var maxV = Math.max.apply(null, values) || 1;
+  var pad = 24; var slot = (W - pad * 2) / days.length; var barW = slot * 0.55;
 
-  var pad = 30; var barW = (W - pad * 2) / days.length - 8;
   values.forEach(function(v, i) {
-    var x = pad + i * ((W - pad * 2) / days.length);
-    var barH = Math.max(4, (v / maxV) * (H - 40));
-    var grad = ctx.createLinearGradient(0, H - 20 - barH, 0, H - 20);
-    grad.addColorStop(0, '#8b5cf6');
-    grad.addColorStop(1, '#6c3fc5');
+    var x = pad + i * slot + (slot - barW) / 2;
+    var barH = Math.max(3, (v / maxV) * (H - 36));
+    var grad = ctx.createLinearGradient(0, H - 18 - barH, 0, H - 18);
+    grad.addColorStop(0, '#e8941a');
+    grad.addColorStop(1, '#c8781a');
     ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.roundRect(x, H - 20 - barH, barW, barH, 4);
-    ctx.fill();
-    // Label
-    ctx.fillStyle = '#7c6d9a'; ctx.font = '10px Inter'; ctx.textAlign = 'center';
-    var label = days[i].slice(5); // MM-DD
-    ctx.fillText(label, x + barW / 2, H - 4);
+    ctx.beginPath(); ctx.roundRect(x, H - 18 - barH, barW, barH, 4); ctx.fill();
+    ctx.fillStyle = '#8a6545'; ctx.font = '9px Inter'; ctx.textAlign = 'center';
+    ctx.fillText(days[i].slice(5), x + barW / 2, H - 3);
     if (v > 0) {
-      ctx.fillStyle = '#e8e3f4'; ctx.font = '11px Inter';
-      ctx.fillText(v, x + barW / 2, H - 24 - barH);
+      ctx.fillStyle = '#fdf5e8'; ctx.font = '11px Inter';
+      ctx.fillText(v, x + barW / 2, H - 21 - barH);
     }
   });
 }
 
-// ── Donut Chart ────────────────────────────────────────────────────────
-function renderDonut(data) {
-  var canvas = document.getElementById('donut-chart');
-  var ctx    = canvas.getContext('2d');
-  var W = canvas.offsetWidth; var H = 160;
+// ── Donut Chart ─────────────────────────────────────────────────────────
+function renderDonut(canvasId, data, labelKey) {
+  var canvas = document.getElementById(canvasId);
+  var ctx = canvas.getContext('2d');
+  var W = canvas.offsetWidth || 200; var H = 140;
   canvas.width = W; canvas.height = H;
   ctx.clearRect(0, 0, W, H);
 
   if (!data.length) {
-    ctx.fillStyle = '#7c6d9a'; ctx.font = '13px Inter';
-    ctx.fillText('No data yet', W / 2 - 40, H / 2); return;
+    ctx.fillStyle = '#8a6545'; ctx.font = '12px Inter'; ctx.textAlign = 'center';
+    ctx.fillText('No data', W / 2, H / 2); return;
   }
 
-  var colors = ['#8b5cf6','#fbbf24','#4ade80','#ff6b6b','#38bdf8'];
-  var total  = data.reduce(function(s, r) { return s + r.count; }, 0);
-  var cx = W * 0.38; var cy = H / 2; var r = H * 0.38; var inner = r * 0.55;
+  var colors = ['#c8781a','#4ade80','#fbbf24','#2dd4bf','#f87171','#a78bfa'];
+  var total = data.reduce(function(s,r){return s+r.count;},0);
+  var cx = W * 0.36; var cy = H / 2; var r = H * 0.36; var inner = r * 0.54;
   var start = -Math.PI / 2;
 
   data.forEach(function(item, i) {
     var slice = (item.count / total) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, start, start + slice);
-    ctx.closePath();
-    ctx.fillStyle = colors[i % colors.length];
-    ctx.fill();
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r, start, start + slice);
+    ctx.closePath(); ctx.fillStyle = colors[i % colors.length]; ctx.fill();
     start += slice;
   });
 
-  // Inner hole
   ctx.beginPath(); ctx.arc(cx, cy, inner, 0, Math.PI * 2);
-  ctx.fillStyle = '#1e1830'; ctx.fill();
+  ctx.fillStyle = '#251509'; ctx.fill();
 
-  // Legend
-  var ly = cy - (data.length * 18) / 2 + 9;
+  var ly = cy - (data.length * 16) / 2 + 8;
   data.forEach(function(item, i) {
     ctx.fillStyle = colors[i % colors.length];
-    ctx.fillRect(cx + r + 16, ly - 7, 10, 10);
-    ctx.fillStyle = '#e8e3f4'; ctx.font = '12px Inter'; ctx.textAlign = 'left';
-    ctx.fillText(item.type + ' (' + item.count + ')', cx + r + 32, ly + 2);
-    ly += 20;
+    ctx.fillRect(cx + r + 12, ly - 6, 9, 9);
+    ctx.fillStyle = '#fdf5e8'; ctx.font = '11px Inter'; ctx.textAlign = 'left';
+    var lbl = (item[labelKey] || '?') + ' (' + item.count + ')';
+    ctx.fillText(lbl, cx + r + 26, ly + 2);
+    ly += 18;
   });
 }
 
-// ── Leads ──────────────────────────────────────────────────────────────
+// ── Leads ───────────────────────────────────────────────────────────────
 var _leadsFilter = '';
 
 function filterLeads(type, btn) {
   _leadsFilter = type;
-  document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('#page-leads .filter-tab').forEach(function(t) { t.classList.remove('active'); });
   btn.classList.add('active');
   loadLeads();
 }
@@ -591,22 +793,20 @@ function loadLeads() {
     var leads = d.leads || [];
     document.getElementById('leads-count').textContent = (d.total || 0) + ' leads captured';
     if (!leads.length) {
-      document.getElementById('leads-table-wrap').innerHTML =
-        '<div class="empty"><div class="empty-icon">📭</div>No leads yet</div>';
+      document.getElementById('leads-table-wrap').innerHTML = emptyState('📭','No leads yet');
       return;
     }
-    var html = '<table><thead><tr>' +
-      '<th>Name</th><th>Email</th><th>Phone</th><th>Business</th><th>Type</th><th>Date</th>' +
-      '</tr></thead><tbody>';
+    var html = '<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Business</th><th>Type</th><th>Notes</th><th>Date</th></tr></thead><tbody>';
     leads.forEach(function(l) {
-      var badge = 'badge-' + (l.inquiry_type || 'general');
+      var bt = 'badge-' + (l.inquiry_type || 'general');
       html += '<tr>' +
-        '<td>' + esc(l.name) + '</td>' +
+        '<td><strong>' + esc(l.name) + '</strong></td>' +
         '<td>' + esc(l.email) + (l.email ? ' <button class="copy-btn" onclick="copy(\'' + esc(l.email) + '\')">⎘</button>' : '') + '</td>' +
         '<td>' + esc(l.phone) + (l.phone ? ' <button class="copy-btn" onclick="copy(\'' + esc(l.phone) + '\')">⎘</button>' : '') + '</td>' +
         '<td>' + esc(l.business_name || '—') + '</td>' +
-        '<td><span class="badge ' + badge + '">' + esc(l.inquiry_type || 'general') + '</span></td>' +
-        '<td>' + fmtDate(l.created_at) + '</td>' +
+        '<td><span class="badge ' + bt + '">' + esc(l.inquiry_type||'general') + '</span></td>' +
+        '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(l.notes || '—') + '</td>' +
+        '<td style="white-space:nowrap">' + fmtDate(l.created_at) + '</td>' +
       '</tr>';
     });
     html += '</tbody></table>';
@@ -614,22 +814,236 @@ function loadLeads() {
   });
 }
 
-// ── Chat History ───────────────────────────────────────────────────────
+// ── Wholesale ──────────────────────────────────────────────────────────
+function loadWholesale() {
+  document.getElementById('wholesale-table-wrap').innerHTML = '<div class="spinner">Loading…</div>';
+  apiFetch('/api/leads?limit=200&type=wholesale').then(function(d) {
+    var leads = d.leads || [];
+    document.getElementById('wholesale-count').textContent = (d.total || 0) + ' wholesale inquiries';
+    if (!leads.length) {
+      document.getElementById('wholesale-table-wrap').innerHTML = emptyState('🏭','No wholesale inquiries yet');
+      return;
+    }
+    var html = '<table><thead><tr><th>Business</th><th>Contact</th><th>Email</th><th>Phone</th><th>Notes / Quantity</th><th>Date</th></tr></thead><tbody>';
+    leads.forEach(function(l) {
+      html += '<tr>' +
+        '<td><strong>' + esc(l.business_name || '—') + '</strong></td>' +
+        '<td>' + esc(l.name) + '</td>' +
+        '<td>' + esc(l.email) + (l.email ? ' <button class="copy-btn" onclick="copy(\'' + esc(l.email) + '\')">⎘</button>' : '') + '</td>' +
+        '<td>' + esc(l.phone) + (l.phone ? ' <button class="copy-btn" onclick="copy(\'' + esc(l.phone) + '\')">⎘</button>' : '') + '</td>' +
+        '<td style="max-width:220px">' + esc(l.notes || '—') + '</td>' +
+        '<td style="white-space:nowrap">' + fmtDate(l.created_at) + '</td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('wholesale-table-wrap').innerHTML = html;
+  });
+}
+
+// ── Support Cases ──────────────────────────────────────────────────────
+var _casesFilter = '';
+var _currentCaseId = '';
+
+function filterCases(status, btn) {
+  _casesFilter = status;
+  document.querySelectorAll('#page-cases .filter-tab').forEach(function(t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  loadCases();
+}
+
+function loadCases() {
+  var url = '/api/cases?limit=200' + (_casesFilter ? '&status=' + _casesFilter : '');
+  document.getElementById('cases-table-wrap').innerHTML = '<div class="spinner">Loading…</div>';
+  apiFetch(url).then(function(d) {
+    var cases = d.cases || [];
+    document.getElementById('cases-count').textContent = (d.total || 0) + ' support cases';
+    if (!cases.length) {
+      document.getElementById('cases-table-wrap').innerHTML = emptyState('🎫','No support cases yet');
+      return;
+    }
+    var html = '<table><thead><tr><th>Case ID</th><th>Name</th><th>Email</th><th>Subject</th><th>Status</th><th>Created</th><th></th></tr></thead><tbody>';
+    cases.forEach(function(c) {
+      html += '<tr>' +
+        '<td><code style="font-size:12px;color:var(--primary2)">' + esc(c.case_id) + '</code></td>' +
+        '<td><strong>' + esc(c.name) + '</strong></td>' +
+        '<td>' + esc(c.email || '—') + '</td>' +
+        '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.subject || '—') + '</td>' +
+        '<td><span class="badge badge-' + (c.status||'open') + '">' + esc(c.status||'open') + '</span></td>' +
+        '<td style="white-space:nowrap">' + fmtDate(c.created_at) + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="openCaseDetail(\'' + esc(c.case_id) + '\')">View</button></td>' +
+      '</tr>';
+    });
+    html += '</tbody></table>';
+    document.getElementById('cases-table-wrap').innerHTML = html;
+  });
+}
+
+function openCaseDetail(caseId) {
+  _currentCaseId = caseId;
+  document.getElementById('case-modal-title').textContent = 'Case · ' + caseId;
+  document.getElementById('case-modal-body').innerHTML = '<div class="spinner">Loading…</div>';
+  openModal('case-modal');
+
+  apiFetch('/api/cases?limit=1&status=').then(function(d) {
+    var c = (d.cases || []).find(function(x) { return x.case_id === caseId; });
+    if (!c) { document.getElementById('case-modal-body').innerHTML = '<p style="color:var(--muted)">Case not found.</p>'; return; }
+    var html =
+      '<div class="case-detail-row"><span class="case-detail-label">Case ID</span><span class="case-detail-value"><code>' + esc(c.case_id) + '</code></span></div>' +
+      '<div class="case-detail-row"><span class="case-detail-label">Name</span><span class="case-detail-value">' + esc(c.name) + '</span></div>' +
+      '<div class="case-detail-row"><span class="case-detail-label">Email</span><span class="case-detail-value">' + esc(c.email||'—') + '</span></div>' +
+      '<div class="case-detail-row"><span class="case-detail-label">Phone</span><span class="case-detail-value">' + esc(c.phone||'—') + '</span></div>' +
+      '<div class="case-detail-row"><span class="case-detail-label">Subject</span><span class="case-detail-value">' + esc(c.subject||'—') + '</span></div>' +
+      '<div class="case-detail-row"><span class="case-detail-label">Description</span><span class="case-detail-value" style="white-space:pre-wrap">' + esc(c.description||'—') + '</span></div>' +
+      '<div class="case-detail-row"><span class="case-detail-label">Created</span><span class="case-detail-value">' + fmtDate(c.created_at) + '</span></div>' +
+      '<div class="case-detail-row"><span class="case-detail-label">Updated</span><span class="case-detail-value">' + fmtDate(c.updated_at) + '</span></div>' +
+      '<div style="margin-top:20px">' +
+        '<div class="form-row"><label>Update Status</label>' +
+          '<select class="form-select" id="case-status-select">' +
+            ['open','in_progress','resolved','closed'].map(function(s) {
+              return '<option value="' + s + '"' + (c.status===s?' selected':'') + '>' + s.replace('_',' ') + '</option>';
+            }).join('') +
+          '</select>' +
+        '</div>' +
+        '<div class="form-row"><label>Internal Notes</label><textarea class="form-textarea" id="case-notes-input" placeholder="Add notes…">' + esc(c.notes||'') + '</textarea></div>' +
+      '</div>';
+    document.getElementById('case-modal-body').innerHTML = html;
+  });
+}
+
+function saveCaseStatus() {
+  if (!_currentCaseId) return;
+  var status = document.getElementById('case-status-select').value;
+  var notes  = document.getElementById('case-notes-input').value;
+  apiPatch('/api/cases/' + encodeURIComponent(_currentCaseId), { status: status, notes: notes })
+    .then(function(d) {
+      if (d.success) { closeModal('case-modal'); loadCases(); }
+    });
+}
+
+// ── New Case Form ───────────────────────────────────────────────────────
+function openCaseForm() { openModal('new-case-modal'); }
+
+function submitCase() {
+  var name = document.getElementById('cf-name').value.trim();
+  var email = document.getElementById('cf-email').value.trim();
+  var phone = document.getElementById('cf-phone').value.trim();
+  var subject = document.getElementById('cf-subject').value.trim();
+  var description = document.getElementById('cf-description').value.trim();
+
+  if (!name) { showFormMsg('case-form-msg', 'Name is required.', false); return; }
+  if (!email && !phone) { showFormMsg('case-form-msg', 'Email or phone is required.', false); return; }
+
+  apiPost('/api/cases', { name: name, email: email, phone: phone, subject: subject, description: description })
+    .then(function(d) {
+      if (d.success) {
+        showFormMsg('case-form-msg', 'Case ' + d.case_id + ' created! Confirmation emails sent.', true);
+        setTimeout(function() { closeModal('new-case-modal'); loadCases(); }, 2000);
+      } else {
+        showFormMsg('case-form-msg', d.detail || 'Error creating case.', false);
+      }
+    });
+}
+
+// ── New Lead Form ───────────────────────────────────────────────────────
+function openLeadForm() { openModal('new-lead-modal'); }
+
+function submitLead() {
+  var name  = document.getElementById('lf-name').value.trim();
+  var email = document.getElementById('lf-email').value.trim();
+  var phone = document.getElementById('lf-phone').value.trim();
+  var type  = document.getElementById('lf-type').value;
+  var biz   = document.getElementById('lf-business').value.trim();
+  var notes = document.getElementById('lf-notes').value.trim();
+
+  if (!name) { showFormMsg('lead-form-msg','Name is required.',false); return; }
+  if (!email && !phone) { showFormMsg('lead-form-msg','Email or phone is required.',false); return; }
+
+  apiPost('/lead', { session_id:'dashboard', name:name, email:email, phone:phone,
+                     inquiry_type:type, business_name:biz, notes:notes })
+    .then(function(d) {
+      if (d.success) {
+        showFormMsg('lead-form-msg','Lead saved!', true);
+        setTimeout(function() { closeModal('new-lead-modal'); loadLeads(); }, 1500);
+      } else {
+        showFormMsg('lead-form-msg', d.detail || 'Error saving lead.', false);
+      }
+    });
+}
+
+// ── Order Lookup ────────────────────────────────────────────────────────
+function lookupOrder() {
+  var q = document.getElementById('order-query').value.trim();
+  if (!q) return;
+  document.getElementById('order-result').innerHTML = '<div class="spinner">Searching Shopify…</div>';
+
+  apiFetch('/api/orders/lookup?q=' + encodeURIComponent(q)).then(function(d) {
+    if (!d.found || !d.order) {
+      document.getElementById('order-result').innerHTML =
+        '<div class="order-result">' +
+          '<div class="empty"><div class="empty-icon">📦</div>No order found for <strong>' + esc(q) + '</strong></div>' +
+        '</div>';
+      return;
+    }
+    var o = d.order;
+    var itemRows = (o.line_items || []).map(function(it) {
+      return '<div class="order-item">' +
+        '<span>' + esc(it.title) + (it.variant_title ? ' <span style="color:var(--muted)">(' + esc(it.variant_title) + ')</span>' : '') +
+        ' × ' + it.quantity + '</span>' +
+        '<span>' + esc(o.currency || 'NZD') + ' ' + esc(it.price) + '</span>' +
+      '</div>';
+    }).join('');
+
+    var fulfillRows = (o.fulfillments || []).map(function(f) {
+      return '<div class="tracking-row">' +
+        '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">FULFILLMENT</div>' +
+        '<div><span class="badge badge-' + (f.status||'pending') + '" style="margin-right:8px">' + esc(f.status||'?') + '</span>' +
+        (f.tracking_number ? ' <strong>' + esc(f.tracking_number) + '</strong>' : '') + '</div>' +
+        (f.tracking_url ? '<div style="margin-top:6px;font-size:12px"><a href="' + esc(f.tracking_url) + '" target="_blank">Track Shipment →</a></div>' : '') +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px">Updated ' + fmtDate(f.updated_at) + '</div>' +
+      '</div>';
+    }).join('');
+
+    var ship = o.shipping_address;
+    document.getElementById('order-result').innerHTML =
+      '<div class="order-result">' +
+        '<div class="order-header">' +
+          '<div class="order-number">' + esc(o.name || ('#' + o.order_number)) + '</div>' +
+          '<div>' +
+            '<span class="badge badge-' + (o.financial_status||'pending') + '" style="margin-right:6px">' + esc(o.financial_status||'—') + '</span>' +
+            '<span class="badge badge-' + (o.fulfillment_status||'unfulfilled') + '">' + esc(o.fulfillment_status||'unfulfilled') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="order-grid">' +
+          '<div><div class="order-field-label">Customer Email</div><div class="order-field-value">' + esc(o.email||'—') + '</div></div>' +
+          '<div><div class="order-field-label">Total</div><div class="order-field-value" style="color:var(--primary2)">' + esc(o.currency||'NZD') + ' ' + esc(o.total_price||'—') + '</div></div>' +
+          '<div><div class="order-field-label">Order Date</div><div class="order-field-value">' + fmtDate(o.created_at) + '</div></div>' +
+          '<div><div class="order-field-label">Ship To</div><div class="order-field-value">' + (ship ? esc(ship.name + ', ' + ship.city + ', ' + ship.country) : '—') + '</div></div>' +
+        '</div>' +
+        '<div class="order-items">' +
+          '<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Order Items</div>' +
+          itemRows +
+        '</div>' +
+        fulfillRows +
+        (o.note ? '<div style="margin-top:14px;font-size:13px;color:var(--muted)"><strong>Note:</strong> ' + esc(o.note) + '</div>' : '') +
+      '</div>';
+  });
+}
+
+// ── Chat History ────────────────────────────────────────────────────────
 function loadChats() {
   document.getElementById('sessions-list').innerHTML = '<div class="spinner">Loading…</div>';
   apiFetch('/api/chat-history?limit=100').then(function(d) {
     var sessions = d.sessions || [];
     document.getElementById('sessions-count').textContent = (d.total || 0) + ' conversations';
     if (!sessions.length) {
-      document.getElementById('sessions-list').innerHTML =
-        '<div class="empty"><div class="empty-icon">💬</div>No conversations yet</div>';
+      document.getElementById('sessions-list').innerHTML = emptyState('💬','No conversations yet');
       return;
     }
     var html = '';
     sessions.forEach(function(s) {
       html += '<div class="session-row" onclick="openThread(\'' + esc(s.session_id) + '\')">' +
         '<div>' +
-          '<div class="session-id">' + s.session_id.slice(0, 24) + '…</div>' +
+          '<div class="session-id">' + s.session_id.slice(0,28) + '…</div>' +
           '<div class="session-meta">Started ' + fmtDate(s.started_at) + ' · Last: ' + fmtDate(s.last_message) + '</div>' +
         '</div>' +
         '<span class="msg-count">' + s.message_count + ' msgs</span>' +
@@ -640,15 +1054,12 @@ function loadChats() {
 }
 
 function openThread(sessionId) {
-  document.getElementById('thread-title').textContent = sessionId.slice(0, 20) + '…';
+  document.getElementById('thread-title').textContent = sessionId.slice(0, 22) + '…';
   document.getElementById('thread-messages').innerHTML = '<div class="spinner">Loading…</div>';
-  document.getElementById('thread-modal').classList.add('open');
+  openModal('thread-modal');
   apiFetch('/api/chat-history/' + encodeURIComponent(sessionId)).then(function(d) {
     var msgs = d.messages || [];
-    if (!msgs.length) {
-      document.getElementById('thread-messages').innerHTML = '<div class="empty">No messages</div>';
-      return;
-    }
+    if (!msgs.length) { document.getElementById('thread-messages').innerHTML = '<div class="empty">No messages</div>'; return; }
     var html = '';
     msgs.forEach(function(m) {
       html += '<div class="msg-wrapper ' + m.role + '">' +
@@ -661,40 +1072,44 @@ function openThread(sessionId) {
   });
 }
 
-function closeThread() {
-  document.getElementById('thread-modal').classList.remove('open');
-}
+// ── Modal helpers ───────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-document.getElementById('thread-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeThread();
+document.querySelectorAll('.modal-bg').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === this) closeModal(this.id); });
 });
 
-// ── Helpers ────────────────────────────────────────────────────────────
+function showFormMsg(containerId, msg, success) {
+  document.getElementById(containerId).innerHTML =
+    '<div class="alert ' + (success ? 'alert-success' : 'alert-error') + '">' + esc(msg) + '</div>';
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────
 function esc(s) {
   return (s || '').toString()
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function fmtDate(s) {
   if (!s) return '—';
   var d = new Date(s);
-  return d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) +
-    ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  return d.toLocaleDateString('en-NZ', { day:'2-digit', month:'short', year:'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-NZ', { hour:'2-digit', minute:'2-digit' });
+}
+
+function emptyState(icon, msg) {
+  return '<div class="empty"><div class="empty-icon">' + icon + '</div>' + msg + '</div>';
 }
 
 function copy(text) {
   navigator.clipboard.writeText(text).then(function() {
-    // subtle feedback
-    var el = event.target;
-    el.textContent = '✓'; setTimeout(function() { el.textContent = '⎘'; }, 1500);
+    event.target.textContent = '✓';
+    setTimeout(function() { event.target.textContent = '⎘'; }, 1500);
   });
 }
 
-// Resize charts on window resize
-window.addEventListener('resize', function() {
-  if (_analyticsLoaded) loadAnalytics();
-});
+window.addEventListener('resize', function() { if (_analyticsLoaded) loadAnalytics(); });
 </script>
 </body>
 </html>

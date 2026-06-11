@@ -112,7 +112,7 @@ def fetch_products() -> list[dict]:
         products.append({
             "title": p.get("title", ""),
             "description": _strip_html(p.get("body_html", "")),
-            "price": f"PKR {min_price:.2f}" if min_price else "Price on request",
+            "price": f"NZD {min_price:.2f}" if min_price else "Price on request",
             "tags": p.get("tags", ""),
             "available": any(
                 v.get("inventory_quantity", 1) > 0
@@ -152,6 +152,91 @@ def fetch_locations() -> list[dict]:
 
     _cache["locations"] = (locations, time.time())
     return locations
+
+
+# ─── Order Lookup ────────────────────────────────────────────────────────────
+
+def _format_order(o: dict) -> dict:
+    return {
+        "order_number": o.get("order_number"),
+        "name": o.get("name"),
+        "email": o.get("email"),
+        "financial_status": o.get("financial_status"),
+        "fulfillment_status": o.get("fulfillment_status") or "unfulfilled",
+        "total_price": o.get("total_price"),
+        "currency": o.get("currency", "NZD"),
+        "created_at": o.get("created_at"),
+        "updated_at": o.get("updated_at"),
+        "note": o.get("note", ""),
+        "line_items": [
+            {
+                "title": item.get("title"),
+                "variant_title": item.get("variant_title", ""),
+                "quantity": item.get("quantity"),
+                "price": item.get("price"),
+            }
+            for item in o.get("line_items", [])
+        ],
+        "shipping_address": {
+            "name":    o.get("shipping_address", {}).get("name", ""),
+            "address": o.get("shipping_address", {}).get("address1", ""),
+            "city":    o.get("shipping_address", {}).get("city", ""),
+            "country": o.get("shipping_address", {}).get("country", ""),
+        } if o.get("shipping_address") else None,
+        "fulfillments": [
+            {
+                "status":          f.get("status"),
+                "tracking_number": f.get("tracking_number"),
+                "tracking_url":    f.get("tracking_url"),
+                "updated_at":      f.get("updated_at"),
+            }
+            for f in o.get("fulfillments", [])
+        ],
+    }
+
+
+def fetch_order(identifier: str) -> dict | None:
+    """
+    Look up a Shopify order by order number (e.g. "1001" or "#1001") or email.
+    Returns a formatted order dict or None if not found.
+    """
+    identifier = identifier.strip()
+    clean_id = identifier.lstrip("#").strip()
+
+    headers = _get_headers()
+
+    # Search by order name / number
+    try:
+        resp = requests.get(
+            f"{BASE_URL}/orders.json",
+            params={"name": clean_id, "status": "any", "limit": 1},
+            headers=headers,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        orders = resp.json().get("orders", [])
+        if orders:
+            return _format_order(orders[0])
+    except Exception as e:
+        print(f"[Shopify] Order lookup by name failed: {e}")
+
+    # Fall back to email search
+    if "@" in identifier:
+        try:
+            resp = requests.get(
+                f"{BASE_URL}/orders.json",
+                params={"email": identifier, "status": "any", "limit": 5},
+                headers=headers,
+                timeout=10,
+            )
+            resp.raise_for_status()
+            orders = resp.json().get("orders", [])
+            if orders:
+                return _format_order(orders[0])
+        except Exception as e:
+            print(f"[Shopify] Order lookup by email failed: {e}")
+
+    return None
 
 
 # ─── Inventory (optional) ────────────────────────────────────────────────────
