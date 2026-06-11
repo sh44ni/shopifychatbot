@@ -5,8 +5,11 @@ main.py — FastAPI application: chat endpoint, lead endpoint, widget serving.
 import json
 import os
 import re
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+_START_TIME = time.time()
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -31,7 +34,8 @@ from prompts import build_system_prompt
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-WIDGET_DIR = Path(__file__).parent / "widget"
+WIDGET_DIR    = Path(__file__).parent / "widget"
+DASHBOARD_DIR = Path(__file__).parent / "dashboard"
 
 # ─── Rate Limiter ─────────────────────────────────────────────────────────────
 
@@ -52,8 +56,8 @@ async def lifespan(app: FastAPI):
 # ─── App ─────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="Shopify Support Chatbot",
-    description="AI-powered customer support with live Shopify data",
+    title="Nata Portuguese Bakery AI Chat",
+    description="AI-powered customer support for Nata Portuguese Bakery",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -138,12 +142,51 @@ async def _save_extracted_lead(session_id: str, lead_data: dict):
 
 @app.get("/")
 async def root():
-    return {"status": "ok", "message": "Shopify Chatbot API is running"}
+    path = DASHBOARD_DIR / "status.html"
+    if path.exists():
+        return FileResponse(path, media_type="text/html")
+    return {"status": "ok", "message": "Nata Portuguese Bakery AI Chat API"}
 
 
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+@app.get("/api/public-stats")
+async def public_stats():
+    """Public stats — no auth required, contains no sensitive customer data."""
+    import sqlite3
+    from datetime import datetime
+    db = os.getenv("LEADS_DB", "leads.db")
+    today = datetime.now().strftime("%Y-%m-%d")
+    uptime = int(time.time() - _START_TIME)
+    try:
+        with sqlite3.connect(db) as conn:
+            total_messages = conn.execute(
+                "SELECT COUNT(*) FROM chat_history"
+            ).fetchone()[0]
+            messages_today = conn.execute(
+                "SELECT COUNT(*) FROM chat_history WHERE DATE(timestamp)=?", (today,)
+            ).fetchone()[0]
+            total_sessions = conn.execute(
+                "SELECT COUNT(DISTINCT session_id) FROM chat_history"
+            ).fetchone()[0]
+        return {
+            "status": "online",
+            "total_messages": total_messages,
+            "messages_today": messages_today,
+            "total_sessions": total_sessions,
+            "uptime_seconds": uptime,
+        }
+    except Exception:
+        return {
+            "status": "online",
+            "total_messages": 0,
+            "messages_today": 0,
+            "total_sessions": 0,
+            "uptime_seconds": uptime,
+        }
 
 
 @app.get("/debug/shopify")
@@ -280,7 +323,6 @@ async def serve_widget_css():
 
 # ─── Dashboard ────────────────────────────────────────────────────────────────
 
-DASHBOARD_DIR = Path(__file__).parent / "dashboard"
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "admin123")
 
 

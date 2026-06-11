@@ -1,5 +1,5 @@
 /**
- * Shopify Support Chatbot — Embeddable Widget
+ * Nata Portuguese Bakery — Embeddable Chat Widget
  * Embed with: <script src="https://shopify.projekts.pk/widget.js"></script>
  *
  * ─── CONFIG ──────────────────────────────────────────────────────────────────
@@ -10,19 +10,19 @@
 
   // ── Configurable constants ────────────────────────────────────────────────
   var API_BASE_URL    = "https://shopify.projekts.pk";   // Backend URL
-  var BOT_NAME        = "Support Assistant";
-  var BOT_AVATAR_EMOJI = "🛍️";
+  var BOT_NAME        = "Nata";
+  var BOT_LOGO_URL    = "https://www.nata.co.nz/cdn/shop/files/top_logo.png?v=1613715845&width=150";
   var USER_AVATAR_EMOJI = "👤";
-  var WELCOME_MESSAGE = "السلام علیکم! 👋 میں آپ کی کیسے مدد کر سکتا ہوں؟\n\nHi there! How can I help you today?";
+  var WELCOME_MESSAGE = "Olá! 👋 Welcome to Nata Portuguese Bakery!\n\nI'm here to help with orders, delivery, wholesale enquiries, and anything else. What can I help you with today?";
   var WIDGET_CSS_URL  = API_BASE_URL + "/widget.css";
   var STORAGE_KEY     = "shopify_chat_session_id";
 
   // Quick reply suggestions shown on first open
   var QUICK_REPLIES = [
-    "Product prices",
-    "Store locations",
-    "Wholesale inquiry",
-    "Delivery info",
+    "Order info",
+    "Delivery & pickup",
+    "Wholesale",
+    "Where to buy",
   ];
 
   // ── Session ID ────────────────────────────────────────────────────────────
@@ -55,9 +55,7 @@
     toggle.id = "shopify-chat-toggle";
     toggle.setAttribute("aria-label", "Open chat");
     toggle.innerHTML = [
-      '<svg viewBox="0 0 24 24" id="chat-icon-open">',
-        '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
-      '</svg>',
+      '<img id="chat-icon-open" src="' + BOT_LOGO_URL + '" alt="Nata" />',
       '<svg viewBox="0 0 24 24" id="chat-icon-close" style="display:none">',
         '<line x1="18" y1="6" x2="6" y2="18"/>',
         '<line x1="6" y1="6" x2="18" y2="18"/>',
@@ -70,11 +68,11 @@
     win.id = "shopify-chat-window";
     win.className = "chat-hidden";
     win.setAttribute("role", "dialog");
-    win.setAttribute("aria-label", "Customer support chat");
+    win.setAttribute("aria-label", "Nata Portuguese Bakery chat");
     win.innerHTML = [
       // Header
       '<div id="shopify-chat-header">',
-        '<div class="chat-avatar">' + BOT_AVATAR_EMOJI + '</div>',
+        '<div class="chat-avatar"><img src="' + BOT_LOGO_URL + '" alt="Nata" /></div>',
         '<div class="chat-header-info">',
           '<div class="chat-header-name">' + BOT_NAME + '</div>',
           '<div class="chat-header-status">',
@@ -104,7 +102,7 @@
       '</div>',
 
       // Brand footer
-      '<div class="chat-footer-brand">Powered by AI · shopify.projekts.pk</div>',
+      '<div class="chat-footer-brand">Powered by AI · nata.co.nz</div>',
     ].join("");
 
     document.body.appendChild(toggle);
@@ -140,7 +138,11 @@
 
     var avatarEl = document.createElement("div");
     avatarEl.className = "chat-message-avatar";
-    avatarEl.textContent = (role === "user") ? USER_AVATAR_EMOJI : BOT_AVATAR_EMOJI;
+    if (role === "user") {
+      avatarEl.textContent = USER_AVATAR_EMOJI;
+    } else {
+      avatarEl.innerHTML = '<img src="' + BOT_LOGO_URL + '" alt="Nata" />';
+    }
 
     var bubble = document.createElement("div");
     bubble.className = "chat-bubble";
@@ -175,7 +177,7 @@
 
     var avatarEl = document.createElement("div");
     avatarEl.className = "chat-message-avatar";
-    avatarEl.textContent = BOT_AVATAR_EMOJI;
+    avatarEl.innerHTML = '<img src="' + BOT_LOGO_URL + '" alt="Nata" />';
 
     var typing = document.createElement("div");
     typing.className = "chat-typing";
@@ -278,9 +280,11 @@
   function openChat() {
     _isOpen = true;
     clearBadge();
+    var toggle = document.getElementById("shopify-chat-toggle");
     var win    = document.getElementById("shopify-chat-window");
     var iOpen  = document.getElementById("chat-icon-open");
     var iClose = document.getElementById("chat-icon-close");
+    if (toggle) toggle.classList.add("chat-is-open");
     if (win)    win.classList.remove("chat-hidden");
     if (iOpen)  iOpen.style.display  = "none";
     if (iClose) iClose.style.display = "block";
@@ -302,9 +306,11 @@
 
   function closeChat() {
     _isOpen = false;
+    var toggle = document.getElementById("shopify-chat-toggle");
     var win    = document.getElementById("shopify-chat-window");
     var iOpen  = document.getElementById("chat-icon-open");
     var iClose = document.getElementById("chat-icon-close");
+    if (toggle) toggle.classList.remove("chat-is-open");
     if (win)    win.classList.add("chat-hidden");
     if (iOpen)  iOpen.style.display  = "block";
     if (iClose) iClose.style.display = "none";
