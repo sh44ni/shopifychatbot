@@ -77,6 +77,30 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_support_ticket",
+            "description": (
+                "Create a support ticket / complaint case for a customer. "
+                "Call this whenever a customer: complains, reports a problem, requests a refund, "
+                "is unhappy with a product or delivery, or explicitly asks to raise a complaint or ticket. "
+                "Collect name + (email or phone) + a brief subject and description before calling this tool."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "name":        {"type": "string", "description": "Customer's full name"},
+                    "email":       {"type": "string", "description": "Customer's email address (preferred)"},
+                    "phone":       {"type": "string", "description": "Customer's phone number"},
+                    "subject":     {"type": "string", "description": "Short one-line subject of the complaint"},
+                    "description": {"type": "string", "description": "Full description of the issue as described by the customer"},
+                    "session_id":  {"type": "string", "description": "The current chat session ID"},
+                },
+                "required": ["name", "subject", "description"],
+            },
+        },
+    },
 ]
 
 # ─── Rate Limiter ─────────────────────────────────────────────────────────────
@@ -366,6 +390,40 @@ async def chat(request: Request, body: ChatRequest):
                     elif function_name == "lookup_order":
                         args = json.loads(tool_call.function.arguments)
                         results = shopify_api.fetch_order(args.get("identifier", ""))
+                    elif function_name == "create_support_ticket":
+                        args = json.loads(tool_call.function.arguments)
+                        case_result = leads_db.save_case(
+                            name=args.get("name", ""),
+                            email=args.get("email", ""),
+                            phone=args.get("phone", ""),
+                            subject=args.get("subject", ""),
+                            description=args.get("description", ""),
+                            session_id=args.get("session_id", session_id),
+                        )
+                        if case_result.get("success"):
+                            case_id = case_result["case_id"]
+                            print(f"[Case] Created {case_id} for {args.get('name')}")
+                            # Fire team + customer emails in background
+                            case_data = {
+                                "case_id":     case_id,
+                                "name":        args.get("name"),
+                                "email":       args.get("email"),
+                                "phone":       args.get("phone"),
+                                "subject":     args.get("subject"),
+                                "description": args.get("description"),
+                            }
+                            send_case_alert(case_data)
+                            if args.get("email"):
+                                send_customer_case_confirmation(
+                                    name=args.get("name"),
+                                    to_email=args.get("email"),
+                                    case_id=case_id,
+                                    subject=args.get("subject"),
+                                )
+                            results = {"success": True, "case_id": case_id,
+                                       "message": f"Support ticket {case_id} created successfully."}
+                        else:
+                            results = {"success": False, "error": case_result.get("error", "Unknown error")}
                     else:
                         results = {"error": f"Unknown function: {function_name}"}
                     
