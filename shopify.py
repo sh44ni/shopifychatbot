@@ -133,21 +133,35 @@ def fetch_products() -> list[dict]:
 
     products = []
     for p in raw_products:
-        # Lowest variant price
-        prices = [float(v.get("price", 0)) for v in p.get("variants", []) if v.get("price")]
+        # Process variants
+        variants_data = []
+        prices = []
+        for v in p.get("variants", []):
+            v_price = float(v.get("price", 0)) if v.get("price") else 0
+            if v_price > 0:
+                prices.append(v_price)
+            
+            is_avail = (
+                v.get("inventory_quantity", 0) > 0
+                or v.get("inventory_policy") == "continue"
+                or v.get("inventory_management") is None
+            )
+            
+            variants_data.append({
+                "title": v.get("title", "Default"),
+                "price": f"NZD {v_price:.2f}",
+                "available": is_avail
+            })
+            
         min_price = min(prices) if prices else None
 
         products.append({
             "title": p.get("title", ""),
             "description": _strip_html(p.get("body_html", "")),
-            "price": f"NZD {min_price:.2f}" if min_price else "Price on request",
+            "starting_price": f"NZD {min_price:.2f}" if min_price else "Price on request",
+            "variants": variants_data,
             "tags": p.get("tags", ""),
-            "available": any(
-                v.get("inventory_quantity", 0) > 0
-                or v.get("inventory_policy") == "continue"
-                or v.get("inventory_management") is None
-                for v in p.get("variants", [])
-            ),
+            "available": any(v["available"] for v in variants_data),
         })
 
     _cache["products"] = (products, time.time())
