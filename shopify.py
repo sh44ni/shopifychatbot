@@ -21,26 +21,37 @@ BASE_URL = f"https://{SHOPIFY_STORE_URL}/admin/api/2026-04"
 CACHE_TTL = 300  # 5 minutes
 _cache: dict = {}
 _token_cache: dict = {}   # { "token": str, "expires_at": float }
+_static_token_valid: bool = True  # set to False if static token returns 401
+
+
+def _invalidate_token():
+    """Force a fresh token fetch on the next request."""
+    global _static_token_valid
+    _static_token_valid = False
+    _token_cache.clear()
+    print("[Shopify] Token invalidated — will fetch fresh on next request")
 
 
 def _get_access_token() -> str:
     """
     Returns a valid Admin API access token.
-    - If SHOPIFY_ACCESS_TOKEN is set in .env, use it directly.
+    - If SHOPIFY_ACCESS_TOKEN is set in .env and hasn't returned a 401, use it.
     - Otherwise, fetch one via Client Credentials (Client ID + Secret).
     """
-    # Static token takes priority — atkn_ is a valid Shopify Admin API token prefix
-    if SHOPIFY_ACCESS_TOKEN:
+    global _static_token_valid
+
+    # Static token takes priority if it hasn't been marked invalid by a 401
+    if SHOPIFY_ACCESS_TOKEN and _static_token_valid:
         return SHOPIFY_ACCESS_TOKEN
 
-    # Check cached token (expires_at - 60s buffer)
+    # Check cached dynamic token (expires_at - 60s buffer)
     if _token_cache.get("token") and time.time() < _token_cache.get("expires_at", 0) - 60:
         return _token_cache["token"]
 
     # Fetch new token via client credentials
     if not SHOPIFY_CLIENT_ID or not SHOPIFY_CLIENT_SECRET:
         print("[Shopify] No valid access token or client credentials found in .env")
-        return SHOPIFY_ACCESS_TOKEN  # fallback even if atkn_
+        return SHOPIFY_ACCESS_TOKEN  # fallback
 
     try:
         resp = requests.post(
@@ -89,13 +100,26 @@ def _strip_html(raw: str) -> str:
 
 # ─── Products ────────────────────────────────────────────────────────────────
 
+def _shopify_get(url: str, **kwargs) -> requests.Response:
+    """
+    GET with automatic 401 retry: if the first attempt returns 401,
+    invalidate the token and retry once with a fresh one.
+    """
+    resp = requests.get(url, headers=_get_headers(), **kwargs)
+    if resp.status_code == 401:
+        print(f"[Shopify] 401 received — invalidating token and retrying: {url}")
+        _invalidate_token()
+        resp = requests.get(url, headers=_get_headers(), **kwargs)
+    return resp
+
+
 def fetch_products() -> list[dict]:
     """Return formatted product list, cached for 5 minutes."""
     if _is_fresh("products"):
         return _cache["products"][0]
 
     try:
-        resp = requests.get(f"{BASE_URL}/products.json?limit=250", headers=_get_headers(), timeout=10)
+        resp = _shopify_get(f"{BASE_URL}/products.json?limit=250", timeout=10)
         resp.raise_for_status()
         raw_products = resp.json().get("products", [])
     except Exception as e:
@@ -132,7 +156,7 @@ def fetch_locations() -> list[dict]:
         return _cache["locations"][0]
 
     try:
-        resp = requests.get(f"{BASE_URL}/locations.json", headers=_get_headers(), timeout=10)
+        resp = _shopify_get(f"{BASE_URL}/locations.json", timeout=10)
         resp.raise_for_status()
         raw_locs = resp.json().get("locations", [])
     except Exception as e:
@@ -207,10 +231,9 @@ def fetch_order(identifier: str) -> dict | None:
 
     # Search by order name / number
     try:
-        resp = requests.get(
+        resp = _shopify_get(
             f"{BASE_URL}/orders.json",
             params={"name": clean_id, "status": "any", "limit": 1},
-            headers=headers,
             timeout=10,
         )
         resp.raise_for_status()
@@ -223,10 +246,9 @@ def fetch_order(identifier: str) -> dict | None:
     # Fall back to email search
     if "@" in identifier:
         try:
-            resp = requests.get(
+            resp = _shopify_get(
                 f"{BASE_URL}/orders.json",
                 params={"email": identifier, "status": "any", "limit": 5},
-                headers=headers,
                 timeout=10,
             )
             resp.raise_for_status()
@@ -244,9 +266,8 @@ def fetch_order(identifier: str) -> dict | None:
 def fetch_inventory(location_id: str) -> list[dict]:
     """Fetch inventory levels for a given location (not cached — call sparingly)."""
     try:
-        resp = requests.get(
+        resp = _shopify_get(
             f"{BASE_URL}/inventory_levels.json?location_ids={location_id}",
-            headers=_get_headers(),
             timeout=10,
         )
         resp.raise_for_status()
