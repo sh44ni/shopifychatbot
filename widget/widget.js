@@ -13,6 +13,8 @@
   var WELCOME_MESSAGE   = "Olá! 👋 Welcome to Nata Portuguese Bakery!\n\nI'm Nata — your personal pastry assistant 🥐 I can help with orders, finding stockists near you, wholesale, and anything else. What can I do for you today?";
   var WIDGET_CSS_URL    = API_BASE_URL + "/widget.css";
   var STORAGE_KEY       = "shopify_chat_session_id";
+  var MESSAGES_KEY      = "shopify_chat_messages";   // persists rendered chat across refreshes
+  var MAX_STORED_MSGS   = 80;                         // cap to avoid localStorage bloat
 
   // Greeting bubble messages (cycles)
   var GREETING_MESSAGES = [
@@ -57,6 +59,23 @@
   }
 
   var SESSION_ID = getOrCreateSessionId();
+
+  // ── Message Persistence ───────────────────────────────────────────────────
+  function loadStoredMessages() {
+    try {
+      var raw = localStorage.getItem(MESSAGES_KEY + "_" + SESSION_ID);
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) { return []; }
+  }
+
+  function saveMessage(role, text, time) {
+    try {
+      var msgs = loadStoredMessages();
+      msgs.push({ role: role, text: text, time: time });
+      if (msgs.length > MAX_STORED_MSGS) msgs = msgs.slice(-MAX_STORED_MSGS);
+      localStorage.setItem(MESSAGES_KEY + "_" + SESSION_ID, JSON.stringify(msgs));
+    } catch (e) {}
+  }
 
   // ── Inject CSS ─────────────────────────────────────────────────────────────
   function injectCSS() {
@@ -213,9 +232,11 @@
   }
 
   // ── Message Rendering ──────────────────────────────────────────────────────
-  function appendMessage(role, text) {
+  function appendMessage(role, text, skipSave) {
     var msgs = document.getElementById("shopify-chat-messages");
     if (!msgs) return;
+
+    var time = formatTime();
 
     var wrap = document.createElement("div");
     wrap.className = "chat-message " + role;
@@ -417,11 +438,24 @@
 
     if (!_welcomeSent) {
       _welcomeSent = true;
-      setTimeout(function () {
-        appendMessage("bot", WELCOME_MESSAGE);
-        renderQuickReplies(QUICK_REPLIES);
-        scrollToBottom();
-      }, 220);
+      var history = loadStoredMessages();
+
+      if (history.length > 0) {
+        // Restore previous conversation silently (no animation delay)
+        setTimeout(function () {
+          history.forEach(function (m) {
+            appendMessage(m.role, m.text, true); // skipSave = true, already stored
+          });
+          scrollToBottom();
+        }, 100);
+      } else {
+        // Fresh session — show welcome + quick replies
+        setTimeout(function () {
+          appendMessage("bot", WELCOME_MESSAGE);
+          renderQuickReplies(QUICK_REPLIES);
+          scrollToBottom();
+        }, 220);
+      }
     }
 
     setTimeout(function () {
