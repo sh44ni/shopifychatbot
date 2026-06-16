@@ -128,6 +128,9 @@
             '<span class="chat-status-dot"></span> Online — replies instantly',
           '</div>',
         '</div>',
+        '<button id="shopify-chat-new" aria-label="Start new chat" title="Start new chat">',
+          '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.89"/></svg>',
+        '</button>',
         '<button id="shopify-chat-close" aria-label="Close chat">✕</button>',
       '</div>',
 
@@ -476,6 +479,36 @@
     if (iClose) iClose.style.display = "none";
   }
 
+  function newChat() {
+    // Clear stored messages and generate a fresh session
+    try {
+      localStorage.removeItem(MESSAGES_KEY + "_" + SESSION_ID);
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (e) {}
+
+    // Generate fresh session ID
+    SESSION_ID = (typeof crypto !== "undefined" && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : "sess_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    try { localStorage.setItem(STORAGE_KEY, SESSION_ID); } catch (e) {}
+
+    // Clear UI
+    var msgs = document.getElementById("shopify-chat-messages");
+    if (msgs) msgs.innerHTML = "";
+    var qr = document.getElementById("shopify-chat-quick-replies");
+    if (qr) qr.innerHTML = "";
+
+    // Reset flags so welcome runs again
+    _welcomeSent = false;
+
+    // Show fresh welcome
+    setTimeout(function () {
+      appendMessage("bot", WELCOME_MESSAGE);
+      renderQuickReplies(QUICK_REPLIES);
+      scrollToBottom();
+    }, 150);
+  }
+
   // ── Events ─────────────────────────────────────────────────────────────────
   function bindEvents() {
     document.getElementById("shopify-chat-toggle").addEventListener("click", function () {
@@ -483,6 +516,7 @@
     });
 
     document.getElementById("shopify-chat-close").addEventListener("click", closeChat);
+    document.getElementById("shopify-chat-new").addEventListener("click", newChat);
 
     var input = document.getElementById("shopify-chat-input");
     input.addEventListener("input", autoResizeTextarea);

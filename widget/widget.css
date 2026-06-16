@@ -313,6 +313,31 @@
   50%       { opacity: 0.4; transform: scale(0.85); }
 }
 
+#shopify-chat-new {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.4s ease;
+  color: white;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+#shopify-chat-new:hover {
+  background: rgba(255,255,255,0.28);
+  transform: rotate(180deg);
+}
+
+#shopify-chat-new svg {
+  stroke: white;
+}
+
 #shopify-chat-close {
   background: rgba(255,255,255,0.15);
   border: none;
