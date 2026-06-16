@@ -43,6 +43,42 @@ openai_client = OpenAI(api_key=OPENAI_API_KEY)
 WIDGET_DIR    = Path(__file__).parent / "widget"
 DASHBOARD_DIR = Path(__file__).parent / "dashboard"
 
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_products",
+            "description": "Fetch the live product catalogue from the Nata Bakery Shopify store, including names, prices, availability, and descriptions.",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_locations",
+            "description": "Fetch all active stockist and store locations for Nata Portuguese Bakery across New Zealand.",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "lookup_order",
+            "description": "Look up a customer order by order number (e.g. #1042) or email address.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "identifier": {
+                        "type": "string",
+                        "description": "The order number (e.g. '1042' or '#1042') or customer email address",
+                    }
+                },
+                "required": ["identifier"],
+            },
+        },
+    },
+]
+
 # ─── Rate Limiter ─────────────────────────────────────────────────────────────
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["30/minute"])
@@ -229,6 +265,41 @@ async def debug_shopify():
         }
 
 
+@app.get("/debug/locations")
+async def debug_locations():
+    """Debug endpoint — shows raw Shopify locations and what the cache holds."""
+    import requests as req
+    store_url = os.getenv("SHOPIFY_STORE_URL", "NOT SET")
+    token = shopify_api._get_access_token()
+    token_preview = token[:8] + "..." if token else "NOT SET"
+
+    url = f"https://{store_url}/admin/api/2026-04/locations.json"
+    headers = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
+
+    try:
+        resp = req.get(url, headers=headers, timeout=10)
+        raw = resp.json()
+        # Also show what fetch_locations() returns (cached)
+        cached = shopify_api.fetch_locations()
+        return {
+            "store_url": store_url,
+            "token_preview": token_preview,
+            "status_code": resp.status_code,
+            "url_called": url,
+            "raw_response": raw,
+            "raw_count": len(raw.get("locations", [])),
+            "cached_locations": cached,
+            "cached_count": len(cached),
+        }
+    except Exception as e:
+        return {
+            "store_url": store_url,
+            "token_preview": token_preview,
+            "error": str(e),
+            "url_called": url,
+        }
+
+
 @app.post("/chat")
 @limiter.limit("30/minute")
 async def chat(request: Request, body: ChatRequest):
@@ -241,44 +312,83 @@ async def chat(request: Request, body: ChatRequest):
     if len(user_message) > 2000:
         raise HTTPException(status_code=400, detail="Message too long (max 2000 chars)")
 
-    # 1. Fetch live Shopify data (cached 5 min)
-    products = shopify_api.fetch_products()
-    locations = shopify_api.fetch_locations()
+    # 1. Build system prompt
+    system_prompt = build_system_prompt()
 
-    # 2. Build system prompt
-    system_prompt = build_system_prompt(products, locations)
-
-    # 3. Get conversation history
+    # 2. Get conversation history
     history = chat_history.get_history(session_id)
 
-    # 4. Save user message to history
+    # 3. Save user message to history
     chat_history.add_message(session_id, "user", user_message)
 
-    # 5. Build messages for OpenAI
+    # 4. Build messages for OpenAI
     messages = [{"role": "system", "content": system_prompt}] + history + [
         {"role": "user", "content": user_message}
     ]
 
-    # 6. Call OpenAI GPT-4o
+    # 5. Call OpenAI GPT-4o with tool calling loop
+    raw_reply = ""
     try:
-        response = openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            max_tokens=800,
-            temperature=0.7,
-        )
-        raw_reply = response.choices[0].message.content or ""
+        for _ in range(3):  # Max 3 iterations for safety
+            response = openai_client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                tools=TOOLS,
+                max_tokens=800,
+                temperature=0.7,
+            )
+            response_message = response.choices[0].message
+            
+            if response_message.tool_calls:
+                message_dict = {
+                    "role": response_message.role,
+                    "content": response_message.content,
+                    "tool_calls": [
+                        {
+                            "id": t.id,
+                            "type": t.type,
+                            "function": {
+                                "name": t.function.name,
+                                "arguments": t.function.arguments
+                            }
+                        } for t in response_message.tool_calls
+                    ]
+                }
+                messages.append(message_dict)
+                for tool_call in response_message.tool_calls:
+                    function_name = tool_call.function.name
+                    print(f"[Tool] {function_name} called")
+                    
+                    if function_name == "get_products":
+                        results = shopify_api.fetch_products()
+                    elif function_name == "get_locations":
+                        results = shopify_api.fetch_locations()
+                    elif function_name == "lookup_order":
+                        args = json.loads(tool_call.function.arguments)
+                        results = shopify_api.fetch_order(args.get("identifier", ""))
+                    else:
+                        results = {"error": f"Unknown function: {function_name}"}
+                    
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "name": function_name,
+                        "content": json.dumps(results)
+                    })
+            else:
+                raw_reply = response_message.content or ""
+                break
     except Exception as e:
         print(f"[OpenAI] Error: {e}")
         raise HTTPException(status_code=502, detail="AI service temporarily unavailable")
 
-    # 7. Extract lead data if present
+    # 6. Extract lead data if present
     clean_reply, lead_data = _extract_and_strip_lead(raw_reply)
 
-    # 8. Save assistant reply to history
+    # 7. Save assistant reply to history
     chat_history.add_message(session_id, "assistant", clean_reply)
 
-    # 9. Persist lead if extracted
+    # 8. Persist lead if extracted
     if lead_data and lead_data.get("name"):
         await _save_extracted_lead(session_id, lead_data)
 

@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SHOPIFY_STORE_URL   = os.getenv("SHOPIFY_STORE_URL", "")
+SHOPIFY_STORE_URL   = os.getenv("SHOPIFY_STORE_URL", "").removeprefix("https://").removeprefix("http://").rstrip("/")
 SHOPIFY_ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN", "")
 SHOPIFY_CLIENT_ID   = os.getenv("SHOPIFY_CLIENT_ID", "")
 SHOPIFY_CLIENT_SECRET = os.getenv("SHOPIFY_CLIENT_SECRET", "")
@@ -29,8 +29,8 @@ def _get_access_token() -> str:
     - If SHOPIFY_ACCESS_TOKEN is set in .env, use it directly.
     - Otherwise, fetch one via Client Credentials (Client ID + Secret).
     """
-    # Static token takes priority
-    if SHOPIFY_ACCESS_TOKEN and not SHOPIFY_ACCESS_TOKEN.startswith("atkn_"):
+    # Static token takes priority — atkn_ is a valid Shopify Admin API token prefix
+    if SHOPIFY_ACCESS_TOKEN:
         return SHOPIFY_ACCESS_TOKEN
 
     # Check cached token (expires_at - 60s buffer)
