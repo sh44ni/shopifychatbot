@@ -151,6 +151,32 @@
     if (msgs) msgs.scrollTop = msgs.scrollHeight;
   }
 
+  // Lightweight markdown → safe HTML (no external libs needed)
+  function renderMarkdown(text) {
+    // 1. Escape raw HTML to prevent XSS
+    var escaped = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // 2. Apply markdown patterns
+    var html = escaped
+      // Bold: **text** or __text__
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/__(.+?)__/g, "<strong>$1</strong>")
+      // Italic: *text* or _text_
+      .replace(/\*(.+?)\*/g, "<em>$1</em>")
+      .replace(/_(.+?)_/g, "<em>$1</em>")
+      // Bullet lines: lines starting with - or •
+      .replace(/(^|\n)([ \t]*[-•]\s+)(.+)/g, function(_, pre, bullet, item) {
+        return (pre || "") + '<span style="display:flex;gap:6px;margin:2px 0"><span style="color:var(--chat-accent);flex-shrink:0">•</span><span>' + item + '</span></span>';
+      })
+      // Newlines → <br>
+      .replace(/\n/g, "<br>");
+
+    return html;
+  }
+
   function autoResizeTextarea() {
     var ta = document.getElementById("shopify-chat-input");
     if (!ta) return;
@@ -204,8 +230,12 @@
 
     var bubble = document.createElement("div");
     bubble.className = "chat-bubble";
-    bubble.textContent = text;
-
+    if (role === "bot") {
+      bubble.innerHTML = renderMarkdown(text);
+    } else {
+      bubble.textContent = text;
+    }
+    
     var col = document.createElement("div");
     col.style.display = "flex";
     col.style.flexDirection = "column";
