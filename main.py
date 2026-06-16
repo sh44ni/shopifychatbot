@@ -176,9 +176,19 @@ def _extract_and_strip_lead(text: str) -> tuple[str, dict | None]:
 
     clean_text = _LEAD_PATTERN.sub("", text).strip()
     try:
-        lead_data = json.loads(match.group(1))
+        json_str = match.group(1).strip()
+        if json_str.startswith("```json"):
+            json_str = json_str[7:]
+        elif json_str.startswith("```"):
+            json_str = json_str[3:]
+        if json_str.endswith("```"):
+            json_str = json_str[:-3]
+            
+        json_str = json_str.strip()
+        lead_data = json.loads(json_str)
         return clean_text, lead_data
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"[Lead] Failed to parse JSON: {e} - string was: {json_str}")
         return clean_text, None
 
 
