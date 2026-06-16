@@ -128,9 +128,6 @@
             '<span class="chat-status-dot"></span> Online — replies instantly',
           '</div>',
         '</div>',
-        '<button id="shopify-chat-new" aria-label="Start new chat" title="Start new chat">',
-          '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.89"/></svg>',
-        '</button>',
         '<button id="shopify-chat-close" aria-label="Close chat">✕</button>',
       '</div>',
 
@@ -153,7 +150,18 @@
         '</button>',
       '</div>',
 
-      // Brand footer
+      // Footer with action buttons
+      '<div class="chat-footer-actions">',
+        '<button id="shopify-chat-end" class="chat-footer-btn chat-footer-btn--end" title="Close chat">',
+          '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+          ' End Chat',
+        '</button>',
+        '<span class="chat-footer-divider">|</span>',
+        '<button id="shopify-chat-new" class="chat-footer-btn chat-footer-btn--new" title="Start a new conversation">',
+          '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.89"/></svg>',
+          ' New Chat',
+        '</button>',
+      '</div>',
       '<div class="chat-footer-brand">Powered by <span>AI</span> · nata.co.nz 🥐</div>',
     ].join("");
 
@@ -516,6 +524,7 @@
     });
 
     document.getElementById("shopify-chat-close").addEventListener("click", closeChat);
+    document.getElementById("shopify-chat-end").addEventListener("click", closeChat);
     document.getElementById("shopify-chat-new").addEventListener("click", newChat);
 
     var input = document.getElementById("shopify-chat-input");
