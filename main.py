@@ -101,6 +101,23 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "check_support_ticket_status",
+            "description": "Look up the status and details of an existing support case by its Case ID (e.g. CASE-2026-0001).",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "case_id": {
+                        "type": "string",
+                        "description": "The Case ID to look up (e.g. 'CASE-2026-0001')"
+                    }
+                },
+                "required": ["case_id"],
+            },
+        },
+    },
 ]
 
 # ─── Rate Limiter ─────────────────────────────────────────────────────────────
@@ -434,6 +451,14 @@ async def chat(request: Request, body: ChatRequest):
                                        "message": f"Support ticket {case_id} created successfully."}
                         else:
                             results = {"success": False, "error": case_result.get("error", "Unknown error")}
+                    elif function_name == "check_support_ticket_status":
+                        args = json.loads(tool_call.function.arguments)
+                        case_id = args.get("case_id", "").upper().strip()
+                        case_data = leads_db.get_case(case_id)
+                        if case_data:
+                            results = {"success": True, "case": case_data}
+                        else:
+                            results = {"success": False, "error": f"Case {case_id} not found."}
                     else:
                         results = {"error": f"Unknown function: {function_name}"}
                     

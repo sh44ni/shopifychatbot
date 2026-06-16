@@ -197,6 +197,14 @@ def get_case(case_id: str) -> dict | None:
         ).fetchone()
     return dict(row) if row else None
 
+def get_case(case_id: str) -> dict | None:
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT * FROM support_cases WHERE case_id=?", (case_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
 
 def update_case_status(case_id: str, new_status: str, notes: str = "") -> bool:
     if new_status not in VALID_STATUSES:
