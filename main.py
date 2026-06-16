@@ -226,11 +226,6 @@ async def _save_extracted_lead(session_id: str, lead_data: dict):
             send_wholesale_alert(lead_data)
         else:
             send_general_lead_alert(lead_data)
-        if lead_data.get("email"):
-            send_lead_confirmation(
-                name=lead_data.get("name", ""),
-                to_email=lead_data["email"],
-            )
         print(f"[Lead] Saved lead #{result['id']} for session {session_id}")
     else:
         print(f"[Lead] Failed to save: {result['error']}")

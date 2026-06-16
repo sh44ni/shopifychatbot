@@ -131,7 +131,7 @@ def send_case_alert(case: dict) -> bool:
     """Notify the Nata team when a new support case is submitted."""
     ts = datetime.now().strftime("%d %b %Y, %I:%M %p")
     html = _wrap(
-        title="New Support Case",
+        title="Support Case Received",
         badge_text=f"Case #{case.get('case_id', '—')}",
         badge_color="#991b1b",
         badge_bg="#fef2f2",
