@@ -143,7 +143,9 @@ def fetch_products() -> list[dict]:
             "price": f"NZD {min_price:.2f}" if min_price else "Price on request",
             "tags": p.get("tags", ""),
             "available": any(
-                v.get("inventory_quantity", 1) > 0
+                v.get("inventory_quantity", 0) > 0
+                or v.get("inventory_policy") == "continue"
+                or v.get("inventory_management") is None
                 for v in p.get("variants", [])
             ),
         })
