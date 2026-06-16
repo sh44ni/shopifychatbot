@@ -55,8 +55,8 @@ TOOLS = [
     {
         "type": "function",
         "function": {
-            "name": "get_locations",
-            "description": "Fetch all active stockist and store locations for Nata Portuguese Bakery across New Zealand.",
+            "name": "get_stockists",
+            "description": "Fetch all active NZ stockist locations for Nata Portuguese Bakery — including Farro Fresh, Woolworths, New World, Moore Wilson, and many independent cafes and delis across New Zealand.",
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
@@ -361,8 +361,8 @@ async def chat(request: Request, body: ChatRequest):
                     
                     if function_name == "get_products":
                         results = shopify_api.fetch_products()
-                    elif function_name == "get_locations":
-                        results = shopify_api.fetch_locations()
+                    elif function_name == "get_stockists":
+                        results = shopify_api.fetch_stockists()
                     elif function_name == "lookup_order":
                         args = json.loads(tool_call.function.arguments)
                         results = shopify_api.fetch_order(args.get("identifier", ""))

@@ -6,6 +6,7 @@ import os
 import time
 import html
 import re
+import xml.etree.ElementTree as ET
 import requests
 from dotenv import load_dotenv
 
@@ -19,9 +20,12 @@ SHOPIFY_CLIENT_SECRET = os.getenv("SHOPIFY_CLIENT_SECRET", "")
 BASE_URL = f"https://{SHOPIFY_STORE_URL}/admin/api/2026-04"
 
 CACHE_TTL = 300  # 5 minutes
+STOCKIST_CACHE_TTL = 3600  # 1 hour — stockist list changes rarely
 _cache: dict = {}
 _token_cache: dict = {}   # { "token": str, "expires_at": float }
 _static_token_valid: bool = True  # set to False if static token returns 401
+
+GOOGLE_MAPS_KML_URL = "https://www.google.com/maps/d/kml?mid=1XRweKGpgC6hxKapAX_-TBCPc6sBcSkY&forcekml=1"
 
 
 def _invalidate_token():
@@ -178,7 +182,54 @@ def fetch_locations() -> list[dict]:
     return locations
 
 
+# ─── Stockists (Google My Maps KML) ─────────────────────────────────────────
+
+def fetch_stockists() -> list[dict]:
+    """
+    Fetch all NZ stockist locations from the public Google My Maps KML feed.
+    Grouped by retailer chain (Farro Fresh, Woolworths, etc.).
+    Cached for 1 hour since stockist list changes infrequently.
+    """
+    cache_key = "stockists"
+    cached_val = _cache.get(cache_key)
+    if cached_val and (time.time() - cached_val[1]) < STOCKIST_CACHE_TTL:
+        return cached_val[0]
+
+    try:
+        resp = requests.get(GOOGLE_MAPS_KML_URL, timeout=15)
+        resp.raise_for_status()
+        root = ET.fromstring(resp.content)
+        ns = {"kml": "http://www.opengis.net/kml/2.2"}
+
+        stockists = []
+        document = root.find("kml:Document", ns)
+        if document is None:
+            document = root
+
+        for folder in document.findall("kml:Folder", ns):
+            # Folder name = retailer chain (e.g. "Farro Fresh", "Woolworths")
+            folder_name_el = folder.find("kml:name", ns)
+            chain = folder_name_el.text.strip() if folder_name_el is not None else "Other"
+
+            for placemark in folder.findall("kml:Placemark", ns):
+                name_el = placemark.find("kml:name", ns)
+                name = name_el.text.strip() if name_el is not None else chain
+                stockists.append({
+                    "chain": chain,
+                    "name": name,
+                })
+
+        _cache[cache_key] = (stockists, time.time())
+        print(f"[Stockists] Fetched {len(stockists)} locations from Google My Maps")
+        return stockists
+
+    except Exception as e:
+        print(f"[Stockists] Error fetching KML: {e}")
+        return _cache.get(cache_key, ([], 0))[0]
+
+
 # ─── Order Lookup ────────────────────────────────────────────────────────────
+
 
 def _format_order(o: dict) -> dict:
     return {
